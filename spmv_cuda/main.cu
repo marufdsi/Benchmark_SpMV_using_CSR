@@ -5,6 +5,7 @@
 
 long strideCounts = 0;
 char *matName;
+int testType = 0;
 cusparseStatus_t cusparse_spmv(cusparseHandle_t handle, cusparseMatDescr_t descr, 
                    int m, int n, int nnz, 
                    int *csrRowPtrA, int *csrColIdxA, double *csrValA, 
@@ -860,7 +861,7 @@ int call_bhsparse(const char *datasetpath)
     // test OpenMP, cuSPARSE and CUSP v0.4.0
     call_cusp_ref(m, n, nnzA, csrRowPtrA, csrColIdxA, csrValA, x, y, y_ref);
     call_cusparse_ref(m, n, nnzA, csrRowPtrA, csrColIdxA, csrValA, x, y, y_ref);
-    call_omp_ref(m, n, nnzA, csrRowPtrA, csrColIdxA, csrValA, x, y, y_ref);
+//    call_omp_ref(m, n, nnzA, csrRowPtrA, csrColIdxA, csrValA, x, y, y_ref);
 
     // run bhSPARSE
     err = bhsparse->prepare_mem(m, n, nnzA, csrRowPtrA, csrColIdxA, csrValA, x, y);
@@ -921,13 +922,23 @@ int call_bhsparse(const char *datasetpath)
 int main(int argc, char ** argv)
 {
     int argi = 1;
-
+    char *input;
     char  *filename;
     if(argc > argi)
     {
-        filename = argv[argi];
+        input = argv[argi];
         argi++;
     }
+    if (argc > argi){
+        testType = atoi(argv[argi]);
+        argi++;
+    }
+    char destination[100];
+    strcpy(destination, input);
+    strcpy(filename, input);
+    /// Parse inpute file to get matrix name
+    char *_ptr = strtok(destination, "/");
+    matName = strtok(strtok(NULL, "+"), ".");
     // use ./spmv example.mtx
     // launch compute
     int err = 0;
