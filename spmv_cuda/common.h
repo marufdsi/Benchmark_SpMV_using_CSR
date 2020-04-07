@@ -34,6 +34,10 @@ typedef float   value_type;
 #define USE_SVM_ALWAYS 1
 #endif
 
+#ifndef TRANSACTION_BYTE
+#define TRANSACTION_BYTE      128
+#endif
+
 #define NUM_RUN      200
 
 #define THREADBUNCH  32

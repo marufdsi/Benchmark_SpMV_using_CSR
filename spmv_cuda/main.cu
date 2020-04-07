@@ -1,7 +1,10 @@
 #include "common.h"
 #include "bhsparse_spmv_cuda.h"
 #include "mmio.h"
+#include <unordered_set>
 
+long strideCounts = 0;
+char *matName;
 cusparseStatus_t cusparse_spmv(cusparseHandle_t handle, cusparseMatDescr_t descr, 
                    int m, int n, int nnz, 
                    int *csrRowPtrA, int *csrColIdxA, double *csrValA, 
@@ -164,6 +167,32 @@ void call_cusparse_ref(int m, int n, int nnz,
          << " GB/s. GFlops = " << gflop/(1.0e+6 * cusparseTime)  << " GFlops." << endl << endl;
 // run cuSPARSE STOP
 
+    char outputFile[100] = "CSR_CUDA_SpMV.csv";
+    FILE *resultCSV;
+    FILE *checkFile;
+    if ((checkFile = fopen(outputFile, "r")) != NULL) {
+        // file exists
+        fclose(checkFile);
+        if (!(resultCSV = fopen(outputFile, "a"))) {
+            fprintf(stderr, "fopen: failed to open %s file\n", outputFile);
+            exit(EXIT_FAILURE);
+        }
+    } else {
+        if (!(resultCSV = fopen(outputFile, "w"))) {
+            fprintf(stderr, "fopen: failed to open file %s\n", outputFile);
+            exit(EXIT_FAILURE);
+        }
+        fprintf(resultCSV, "Name,M,N,AvgTime,TotalRun,NonZeroPerRow,NonZeroElements,Bandwidth,Flops,ValueType,Type,Strides,TransactionByte,WordSize\n");
+    }
+
+    fprintf(resultCSV, "%s,%d,%d,%10.6lf,%d,%lf,%d,%lf,%lf,%d,%s\n", matName, m, n, cuspTime, NUM_RUN, (double) nnz / m,
+            nnz, gb / (1.0e+6 * cuspTime), gflop / (1.0e+6 * cuspTime), sizeof(value_type), "CUSPARSE", , strideCounts,
+            TRANSACTION_BYTE, TRANSACTION_BYTE/ sizeof(value_type));
+    if (fclose(resultCSV) != 0) {
+        fprintf(stderr, "fopen: failed to open file %s\n", outputFile);
+        exit(EXIT_FAILURE);
+    }
+
 #if USE_SVM_ALWAYS
     checkCudaErrors(cudaFree(svm_csrValA));
     checkCudaErrors(cudaFree(svm_csrRowPtrA));
@@ -315,6 +344,32 @@ void call_cusp_ref(int m, int n, int nnz,
          << " ms. Bandwidth = " << gb/(1.0e+6 * cuspTime)
          << " GB/s. GFlops = " << gflop/(1.0e+6 * cuspTime)  << " GFlops." << endl << endl;
 // run CUSP STOP
+
+    char outputFile[100] = "CSR_CUDA_SpMV.csv";
+    FILE *resultCSV;
+    FILE *checkFile;
+    if ((checkFile = fopen(outputFile, "r")) != NULL) {
+        // file exists
+        fclose(checkFile);
+        if (!(resultCSV = fopen(outputFile, "a"))) {
+            fprintf(stderr, "fopen: failed to open %s file\n", outputFile);
+            exit(EXIT_FAILURE);
+        }
+    } else {
+        if (!(resultCSV = fopen(outputFile, "w"))) {
+            fprintf(stderr, "fopen: failed to open file %s\n", outputFile);
+            exit(EXIT_FAILURE);
+        }
+        fprintf(resultCSV, "Name,M,N,AvgTime,TotalRun,NonZeroPerRow,NonZeroElements,Bandwidth,Flops,ValueType,Type,Strides,TransactionByte,WordSize\n");
+    }
+
+    fprintf(resultCSV, "%s,%d,%d,%10.6lf,%d,%lf,%d,%lf,%lf,%d,%s\n", matName, m, n, cuspTime, NUM_RUN, (double) nnz / m,
+            nnz, gb / (1.0e+6 * cuspTime), gflop / (1.0e+6 * cuspTime), sizeof(value_type), "CUSP", , strideCounts,
+            TRANSACTION_BYTE, TRANSACTION_BYTE/ sizeof(value_type));
+    if (fclose(resultCSV) != 0) {
+        fprintf(stderr, "fopen: failed to open file %s\n", outputFile);
+        exit(EXIT_FAILURE);
+    }
 
 #if USE_SVM_ALWAYS
     checkCudaErrors(cudaFree(svm_csrValA));
@@ -570,7 +625,7 @@ int call_bhsparse(const char *datasetpath)
     int ret_code;
     MM_typecode matcode;
     FILE *f;
-    int m, n, nnzA;
+    int m, n, nnzA, max_deg = 0;
     int *csrRowPtrA;
     int *csrColIdxA;
     value_type *csrValA;
@@ -651,6 +706,9 @@ int call_bhsparse(const char *datasetpath)
         csrRowIdxA_tmp[i] = idxi;
         csrColIdxA_tmp[i] = idxj;
         csrValA_tmp[i] = fval;
+        if (csrRowPtrA_counter[idxi] > max_deg) {
+            max_deg = csrRowPtrA_counter[idxi];
+        }
     }
 
     if (f != stdin)
@@ -744,6 +802,32 @@ int call_bhsparse(const char *datasetpath)
 
     value_type *y = (value_type *)malloc(m * sizeof(value_type));
     value_type *y_ref = (value_type *)malloc(m * sizeof(value_type));
+
+    /***********Access Pattern Based on 128 Threads Per Block *********/
+    cout << "M: " << m << " N: " << n << " nnzA: " << nnzA << " Max degree=" << max_deg << endl;
+    int wordSize = TRANSACTION_BYTE/ sizeof(value_type);
+    for (int row_i = 0; row_i < m; row_i += wordSize) {
+        for (int k = 0; k < max_deg; ++k) {
+            int failed = 0;
+            int row_check = (row_i + wordSize) > m ? m : (row_i + wordSize);
+            unordered_set<long> hashme;
+            for (int th = row_i; th < row_check; ++th) {
+                if (k < (csrRowPtrA[th + 1] - csrRowPtrA[th])) {
+                    hashme.insert((long)(&x[csrColIdxA[csrRowPtrA[th] + k]])/TRANSACTION_BYTE);
+                    failed = 1;
+                }
+
+            }
+
+            if (failed == 0) {
+                break;
+            }
+            strideCounts += hashme.size();
+        }
+    }
+    cout << "Strides count: " << strideCounts << " Transaction Byte Size: " << TRANSACTION_BYTE << " Number of Transaction Word: " << wordSize << endl;
+
+    /*****************************************************************/
 
     // compute cpu results
     bhsparse_timer ref_timer;
