@@ -35,7 +35,7 @@ iT binary_search_right_boundary_kernel(const iT *d_row_pointer,
 
 #if __CUDA_ARCH__ <= 320
 
-__device__ __forceinline__
+/*__device__ __forceinline__
 extern double __shfl_down(double var, unsigned int srcLane, int width=32)
 {
     int2 a = *reinterpret_cast<int2*>(&var);
@@ -60,7 +60,7 @@ extern double __shfl_xor(double var, int srcLane, int width=32)
     a.x = __shfl_xor(a.x, srcLane, width);
     a.y = __shfl_xor(a.y, srcLane, width);
     return *reinterpret_cast<double*>(&a);
-}
+}*/
 
 #endif
 
