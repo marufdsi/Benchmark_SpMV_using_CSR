@@ -1,6 +1,11 @@
 #compilers
 CC=nvcc
 CXX = g++
+
+CFLAGS = -lmpi
+CXXFLAGS = -std=c++11
+CUFLAGS="-D__LP64__ -ta:tesla"
+
 #GLOBAL_PARAMETERS
 USE_DOUBLE = 0
 USE_SVM_ALWAYS = 0
@@ -15,4 +20,4 @@ CUDA_LIBS = -L$(CUDA_INSTALL_PATH)/lib -lcudart -lcusparse
 LIBS = $(CUDA_LIBS)
 
 all:
-	$(CC)  -arch=sm_32 -O3 -Xcompiler -fopenmp main.cu -o spmv $(INCLUDES) $(LIBS) -D USE_DOUBLE=$(USE_DOUBLE) -D USE_SVM_ALWAYS=$(USE_SVM_ALWAYS)
+	$(CC) $(CXXFLAGS) $(CUFLAGS) -arch=sm_37 -O3 -Xcompiler -fopenmp main.cu -o spmv $(INCLUDES) $(LIBS) -D USE_DOUBLE=$(USE_DOUBLE) -D USE_SVM_ALWAYS=$(USE_SVM_ALWAYS) -D TRANSACTION_BYTE=$(TRANSACTION_BYTE)
