@@ -923,7 +923,7 @@ int main(int argc, char ** argv)
 {
     int argi = 1;
     char *input;
-    char  *filename;
+    char filename[100];
     if(argc > argi)
     {
         input = argv[argi];
