@@ -186,8 +186,8 @@ void call_cusparse_ref(int m, int n, int nnz,
         fprintf(resultCSV, "Name,M,N,AvgTime,TotalRun,NonZeroPerRow,NonZeroElements,Bandwidth,Flops,ValueType,Type,Strides,TransactionByte,WordSize\n");
     }
 
-    fprintf(resultCSV, "%s,%d,%d,%10.6lf,%d,%lf,%d,%lf,%lf,%d,%s\n", matName, m, n, cuspTime, NUM_RUN, (double) nnz / m,
-            nnz, gb / (1.0e+6 * cuspTime), gflop / (1.0e+6 * cuspTime), sizeof(value_type), "CUSPARSE", , strideCounts,
+    fprintf(resultCSV, "%s,%d,%d,%10.6lf,%d,%lf,%d,%lf,%lf,%d,%s\n", matName, m, n, cusparseTime, NUM_RUN, (double) nnz / m,
+            nnz, gb / (1.0e+6 * cusparseTime), gflop / (1.0e+6 * cusparseTime), sizeof(value_type), "CUSPARSE", strideCounts,
             TRANSACTION_BYTE, TRANSACTION_BYTE/ sizeof(value_type));
     if (fclose(resultCSV) != 0) {
         fprintf(stderr, "fopen: failed to open file %s\n", outputFile);
@@ -365,7 +365,7 @@ void call_cusp_ref(int m, int n, int nnz,
     }
 
     fprintf(resultCSV, "%s,%d,%d,%10.6lf,%d,%lf,%d,%lf,%lf,%d,%s\n", matName, m, n, cuspTime, NUM_RUN, (double) nnz / m,
-            nnz, gb / (1.0e+6 * cuspTime), gflop / (1.0e+6 * cuspTime), sizeof(value_type), "CUSP", , strideCounts,
+            nnz, gb / (1.0e+6 * cuspTime), gflop / (1.0e+6 * cuspTime), sizeof(value_type), "CUSP", strideCounts,
             TRANSACTION_BYTE, TRANSACTION_BYTE/ sizeof(value_type));
     if (fclose(resultCSV) != 0) {
         fprintf(stderr, "fopen: failed to open file %s\n", outputFile);
