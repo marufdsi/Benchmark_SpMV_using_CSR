@@ -168,7 +168,7 @@ void call_cusparse_ref(int m, int n, int nnz,
          << " GB/s. GFlops = " << gflop/(1.0e+6 * cusparseTime)  << " GFlops." << endl << endl;
 // run cuSPARSE STOP
 
-    char outputFile[100] = "CSR_CUDA_SpMV.csv";
+    char outputFile[100] = "Results/CSR_CUDA_SpMV.csv";
     FILE *resultCSV;
     FILE *checkFile;
     if ((checkFile = fopen(outputFile, "r")) != NULL) {
@@ -346,7 +346,7 @@ void call_cusp_ref(int m, int n, int nnz,
          << " GB/s. GFlops = " << gflop/(1.0e+6 * cuspTime)  << " GFlops." << endl << endl;
 // run CUSP STOP
 
-    char outputFile[100] = "CSR_CUDA_SpMV.csv";
+    char outputFile[100] = "Results/CSR_CUDA_SpMV.csv";
     FILE *resultCSV;
     FILE *checkFile;
     if ((checkFile = fopen(outputFile, "r")) != NULL) {
