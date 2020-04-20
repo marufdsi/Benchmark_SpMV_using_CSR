@@ -6,7 +6,7 @@
 #define MAX_STRING_LENGTH 128
 long strideCounts = 0;
 char matName[MAX_STRING_LENGTH];
-int testType = 0, rank, nRanks, MASTER = 0, sqrRank, row_rank, col_rank, firstRow, firstCol, total_sparsity = 0,
+int testType = 0, mpi_rank, nRanks, MASTER = 0, sqrRank, row_rank, col_rank, firstRow, firstCol, total_sparsity = 0,
 max_sparsity = 0, transactionByte = 128;
 MPI_Comm commrow;
 MPI_Comm commcol;
@@ -392,7 +392,7 @@ void call_cusp_ref(int m, int n, int nnz, int *csrRowPtrA, int *csrColIdxA, valu
     m_time /= nRanks;
     r_time /= nRanks;
     avgTime /= nRanks;
-    if(rank == MASTER) {
+    if(mpi_rank == MASTER) {
         cout << "CUSP time = " << cuspTime
              << " ms. Bandwidth = " << gb / (1.0e+6 * cuspTime)
              << " GB/s. GFlops = " << gflop / (1.0e+6 * cuspTime) << " GFlops." << endl << endl;
@@ -715,7 +715,7 @@ int call_bhsparse(const char *datasetpath)
         //cout << "symmetric = false" << endl;
     }
 
-    firstRow = ceil(((double) n / sqrRank)) * (rank / sqrRank);
+    firstRow = ceil(((double) n / sqrRank)) * (mpi_rank / sqrRank);
     m = ceil(((double) n) / sqrRank);
     firstCol = col_rank * m;
 
@@ -976,20 +976,20 @@ int main(int argc, char ** argv)
     char filename[MAX_STRING_LENGTH];
     MPI_Init(&argc, &argv);
     MPI_Comm_size(MPI_COMM_WORLD, &nRanks);
-    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+    MPI_Comm_rank(MPI_COMM_WORLD, &mpi_rank);
     char processor_name[MPI_MAX_PROCESSOR_NAME];
     int name_len;
     MPI_Get_processor_name(processor_name, &name_len);
-    std::cout<<"[" << rank << ": " <<  processor_name << "] GPU 2d SpMV, MPI ranks " << rank << " of "<< nRanks
+    std::cout<<"[" << mpi_rank << ": " <<  processor_name << "] GPU 2d SpMV, MPI rank " << mpi_rank << " of "<< nRanks
     << " starting...." << endl;
     sqrRank = sqrt(nRanks);
-    row_rank = rank / sqrRank; //which col of proc am I
-    col_rank = rank % sqrRank; //which row of proc am I
+    row_rank = mpi_rank / sqrRank; //which col of proc am I
+    col_rank = mpi_rank % sqrRank; //which row of proc am I
 
     //initialize communicators
-    MPI_Comm_split(MPI_COMM_WORLD, row_rank, rank, &commrow);
+    MPI_Comm_split(MPI_COMM_WORLD, row_rank, mpi_rank, &commrow);
 
-    MPI_Comm_split(MPI_COMM_WORLD, col_rank, rank, &commcol);
+    MPI_Comm_split(MPI_COMM_WORLD, col_rank, mpi_rank, &commcol);
     if(argc > argi)
     {
         input = argv[argi];
@@ -1015,7 +1015,7 @@ int main(int argc, char ** argv)
         strcat(n, "/");
     }
     ptr = strtok(file[i-1], ".");
-    sprintf(filename, "%s%s_%d.mtx", n, ptr, rank);
+    sprintf(filename, "%s%s_%d.mtx", n, ptr, mpi_rank);
     char *good_format = strtok(ptr, "_");
     i=0;
     while(good_format != NULL)
