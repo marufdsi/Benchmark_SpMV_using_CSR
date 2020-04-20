@@ -982,7 +982,7 @@ int main(int argc, char ** argv)
     MPI_Get_processor_name(processor_name, &name_len);
     std::cout<<"[" << rank << ": " <<  processor_name << "] GPU 2d SpMV " <<  << " MPI ranks " << rank << " of "
     << nRanks << " starting...." << endl;
-    sqrRank = sqrt(nProcess);
+    sqrRank = sqrt(nRanks);
     row_rank = rank / sqrRank; //which col of proc am I
     col_rank = rank % sqrRank; //which row of proc am I
 
