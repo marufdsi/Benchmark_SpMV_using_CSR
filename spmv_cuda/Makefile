@@ -7,7 +7,7 @@ CFLAGS = -lmpi
 CXXFLAGS = -std=c++11
 CUFLAGS="-D__LP64__ -ta:tesla"
 
-MPIFLAGS = -I/apps/pkg/openmpi/4.0.1/rhel7_u5/pbs/gnu/include/ -L/apps/pkg/openmpi/4.0.1/rhel7_u5/pbs/gnu/lib/
+MPIFLAGS = -I/apps/pkg/openmpi/3.1.2/rhel7_u5/pbs/gnu/include/ -L/apps/pkg/openmpi/3.1.2/rhel7_u5/pbs/gnu/lib/
 # MPICH FLAGS
 #MPIFLAGS = -I/apps/pkg/mpich-3.2.1/rhel7_u2-x86_64-ib/gnu/include/ -L/apps/pkg/mpich-3.2.1/rhel7_u2-x86_64-ib/gnu/lib/
 CFLAGS = -lmpi
