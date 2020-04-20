@@ -173,7 +173,7 @@ void call_cusparse_ref(int m, int n, int nnz,
          << " GB/s. GFlops = " << gflop/(1.0e+6 * cusparseTime)  << " GFlops." << endl << endl;
 // run cuSPARSE STOP
 
-    char outputFile[100] = "Results/CSR_CUDA_SpMV.csv";
+    char outputFile[100] = "Results/CSR_CUDA_2DSpMV.csv";
     FILE *resultCSV;
     FILE *checkFile;
     if ((checkFile = fopen(outputFile, "r")) != NULL) {
@@ -910,11 +910,11 @@ int call_bhsparse(const char *datasetpath)
 
     // test OpenMP, cuSPARSE and CUSP v0.4.0
     call_cusp_ref(m, m, nnzA, csrRowPtrA, csrColIdxA, csrValA, x, y, y_ref);
-    call_cusparse_ref(m, m, nnzA, csrRowPtrA, csrColIdxA, csrValA, x, y, y_ref);
+//    call_cusparse_ref(m, m, nnzA, csrRowPtrA, csrColIdxA, csrValA, x, y, y_ref);
 //    call_omp_ref(m, n, nnzA, csrRowPtrA, csrColIdxA, csrValA, x, y, y_ref);
 
     // run bhSPARSE
-    err = bhsparse->prepare_mem(m, m, nnzA, csrRowPtrA, csrColIdxA, csrValA, x, y);
+    /*err = bhsparse->prepare_mem(m, m, nnzA, csrRowPtrA, csrColIdxA, csrValA, x, y);
 
     double time = 0.0;
     err = bhsparse->run_benchmark();
@@ -957,7 +957,7 @@ int call_bhsparse(const char *datasetpath)
     }
 
     err = bhsparse->free_platform();
-    err = bhsparse->free_mem();
+    err = bhsparse->free_mem();*/
 
     free(csrRowPtrA);
     free(csrColIdxA);
