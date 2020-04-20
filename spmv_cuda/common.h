@@ -37,9 +37,9 @@ typedef float   value_type;
 #ifndef TRANSACTION_BYTE
 #define TRANSACTION_BYTE      128
 #endif
-
+#ifndef NUM_RUN
 #define NUM_RUN      200
-
+#endif
 #define THREADBUNCH  32
 #define THREADGROUP  160
 
