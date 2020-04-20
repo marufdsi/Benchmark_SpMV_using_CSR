@@ -3,10 +3,15 @@
 #include "mmio.h"
 #include <unordered_set>
 #include<mpi.h>
-
+#define MAX_STRING_LENGTH 128
 long strideCounts = 0;
-char *matName;
-int testType = 0;
+char matName[MAX_STRING_LENGTH];
+int testType = 0, rank, nRanks, MASTER = 0, sqrRank, row_rank, col_rank, firstRow, firstCol, total_sparsity = 0,
+max_sparsity = 0, transactionByte = 128;
+long strideCounts = 0;
+MPI_Comm commrow;
+MPI_Comm commcol;
+
 cusparseStatus_t cusparse_spmv(cusparseHandle_t handle, cusparseMatDescr_t descr, 
                    int m, int n, int nnz, 
                    int *csrRowPtrA, int *csrColIdxA, double *csrValA, 
@@ -216,31 +221,9 @@ void call_cusparse_ref(int m, int n, int nnz,
 
 
 
-void call_cusp_ref(int m, int n, int nnz,  
-                   int *csrRowPtrA, int *csrColIdxA, value_type *csrValA,
-                   value_type *x, value_type *y, value_type *y_ref)
+void call_cusp_ref(int m, int n, int nnz, int *csrRowPtrA, int *csrColIdxA, value_type *csrValA, value_type *x
+        , value_type *y, value_type *y_ref)
 {
-#if USE_SVM_ALWAYS
-    cout << endl << "CUSP is using shared virtual memory (unified memory).";
-    int *svm_csrRowPtrA;
-    int *svm_csrColIdxA;
-    value_type *svm_csrValA;
-    value_type *svm_x;
-    value_type *svm_y;
-
-    checkCudaErrors(cudaMallocManaged(&svm_csrRowPtrA, (m+1) * sizeof(int)));
-    checkCudaErrors(cudaMallocManaged(&svm_csrColIdxA, nnz  * sizeof(int)));
-    checkCudaErrors(cudaMallocManaged(&svm_csrValA,    nnz  * sizeof(value_type)));
-    memcpy(svm_csrRowPtrA, csrRowPtrA, (m+1) * sizeof(int));
-    memcpy(svm_csrColIdxA, csrColIdxA, nnz  * sizeof(int));
-    memcpy(svm_csrValA,    csrValA,    nnz  * sizeof(value_type));
-
-    checkCudaErrors(cudaMallocManaged(&svm_x, n  * sizeof(value_type)));
-    memcpy(svm_x,    x,    n  * sizeof(value_type));
-    checkCudaErrors(cudaMallocManaged(&svm_y, m  * sizeof(value_type)));
-    memcpy(svm_y,    y,    m  * sizeof(value_type));
-    // prepare device memory
-#else
     cout << endl << "CUSP is using dedicated GPU memory.";
     int *d_csrRowPtrA;
     int *d_csrColIdxA;
@@ -256,137 +239,200 @@ void call_cusp_ref(int m, int n, int nnz,
     checkCudaErrors(cudaMemcpy(d_csrValA,    csrValA,    nnz  * sizeof(value_type),   cudaMemcpyHostToDevice));
 
     checkCudaErrors(cudaMalloc((void **)&d_x, n * sizeof(value_type)));
-    checkCudaErrors(cudaMemcpy(d_x, x, n * sizeof(value_type), cudaMemcpyHostToDevice));
     checkCudaErrors(cudaMalloc((void **)&d_y, m  * sizeof(value_type)));
     checkCudaErrors(cudaMemcpy(d_y, y, m * sizeof(value_type), cudaMemcpyHostToDevice));
-#endif
-
-
-    double gb = (double)((m + 1 + nnz) * sizeof(int) + (2 * nnz + m) * sizeof(value_type));
-    double gflop = (double)(2 * nnz);
-
-// run CUSP START
-    const int nnz_per_row = nnz / m;
-
-    bhsparse_timer cusp_timer;
-    cusp_timer.start();
-
-    if (nnz_per_row <=  2)
-    {
-        for (int i = 0; i < NUM_RUN; i++)
-#if USE_SVM_ALWAYS
-            cusp_spmv<2>(m, n, nnz, svm_csrRowPtrA, svm_csrColIdxA, svm_csrValA, svm_x, svm_y);
-#else
-            cusp_spmv<2>(m, n, nnz, d_csrRowPtrA, d_csrColIdxA, d_csrValA, d_x, d_y);
-#endif
-    }
-    else if (nnz_per_row <=  4)
-    {
-        for (int i = 0; i < NUM_RUN; i++)
-#if USE_SVM_ALWAYS
-            cusp_spmv<4>(m, n, nnz, svm_csrRowPtrA, svm_csrColIdxA, svm_csrValA, svm_x, svm_y);
-#else
-            cusp_spmv<4>(m, n, nnz, d_csrRowPtrA, d_csrColIdxA, d_csrValA, d_x, d_y);
-#endif
-    }
-    else if (nnz_per_row <=  8)
-    {
-        for (int i = 0; i < NUM_RUN; i++)
-#if USE_SVM_ALWAYS
-            cusp_spmv<8>(m, n, nnz, svm_csrRowPtrA, svm_csrColIdxA, svm_csrValA, svm_x, svm_y);
-#else
-            cusp_spmv<8>(m, n, nnz, d_csrRowPtrA, d_csrColIdxA, d_csrValA, d_x, d_y);
-#endif
-    }
-    else if (nnz_per_row <= 16)
-    {
-        for (int i = 0; i < NUM_RUN; i++)
-#if USE_SVM_ALWAYS
-            cusp_spmv<16>(m, n, nnz, svm_csrRowPtrA, svm_csrColIdxA, svm_csrValA, svm_x, svm_y);
-#else
-            cusp_spmv<16>(m, n, nnz, d_csrRowPtrA, d_csrColIdxA, d_csrValA, d_x, d_y);
-#endif
-    }
-    else
-    {
-        for (int i = 0; i < NUM_RUN; i++)
-#if USE_SVM_ALWAYS
-            cusp_spmv<32>(m, n, nnz, svm_csrRowPtrA, svm_csrColIdxA, svm_csrValA, svm_x, svm_y);
-#else
-            cusp_spmv<32>(m, n, nnz, d_csrRowPtrA, d_csrColIdxA, d_csrValA, d_x, d_y);
-#endif
-    }
-
-    checkCudaErrors(cudaDeviceSynchronize());
-    double cuspTime = cusp_timer.stop() / NUM_RUN;
 
     cout << endl << "Checking CUSP SpMV Correctness ... ";
-
-#if USE_SVM_ALWAYS == 0
+    checkCudaErrors(cudaMemcpy(d_x, x, n * sizeof(value_type), cudaMemcpyHostToDevice));
+    cusp_spmv<32>(m, n, nnz, d_csrRowPtrA, d_csrColIdxA, d_csrValA, d_x, d_y);
     value_type *y_cusp_ref = (value_type *)malloc(m * sizeof(value_type));
     checkCudaErrors(cudaMemcpy(y_cusp_ref, d_y, m * sizeof(value_type), cudaMemcpyDeviceToHost));
-#endif
 
     int error_count = 0;
     for (int i = 0; i < m; i++)
-#if USE_SVM_ALWAYS
-        if (y_ref[i] != svm_y[i])
-            error_count++;
-#else
         if (y_ref[i] != y_cusp_ref[i])
             error_count++;
-#endif
     if (error_count)
         cout << "NO PASS. Error count = " << error_count << " out of " << m << " entries.";
     else
         cout << "PASS!";
     cout << endl;
 
-    cout << "CUSP time = " << cuspTime
-         << " ms. Bandwidth = " << gb/(1.0e+6 * cuspTime)
-         << " GB/s. GFlops = " << gflop/(1.0e+6 * cuspTime)  << " GFlops." << endl << endl;
+    double gb = (double)((m + 1 + nnz) * sizeof(int) + (2 * nnz + m) * sizeof(value_type));
+    double gflop = (double)(2 * nnz);
+
+// run CUSP START
+    const int nnz_per_row = nnz / m;
+    bhsparse_timer cusp_timer;
+    bhsparse_timer broadcast_timer;
+    bhsparse_timer mult_timer;
+    bhsparse_timer reduce_timer;
+    cusp_timer.start();
+    double b_time, r_time, m_time, avg_b_time = 0, avg_r_time = 0, avg_m_time = 0;
+    if (nnz_per_row <=  2)
+    {
+        for (int i = 0; i < NUM_RUN+SKIP; i++) {
+            broadcast_timer.start();
+            MPI_Bcast(x, m, MPI_FLOAT, col_rank, commcol); //col_rank is the one with the correct information
+            b_time = broadcast_timer.stop();
+            checkCudaErrors(cudaMemcpy(d_x, x, n * sizeof(value_type), cudaMemcpyHostToDevice));
+            mult_timer.start();
+            cusp_spmv<2>(m, n, nnz, d_csrRowPtrA, d_csrColIdxA, d_csrValA, d_x, d_y);
+            m_time = mult_timer.stop();
+            checkCudaErrors(cudaMemcpy(y, d_y, m * sizeof(value_type), cudaMemcpyDeviceToHost));
+            reduce_timer.start();
+            MPI_Reduce(y, x, m, MPI_FLOAT, MPI_SUM, row_rank, commrow);
+            r_time = reduce_timer.stop();
+            if(i>=SKIP){
+                avg_b_time += b_time;
+                avg_m_time += m_time;
+                avg_r_time += r_time;
+            }
+        }
+    }
+    else if (nnz_per_row <=  4)
+    {
+        for (int i = 0; i < NUM_RUN; i++) {
+            broadcast_timer.start();
+            MPI_Bcast(x, m, MPI_FLOAT, col_rank, commcol); //col_rank is the one with the correct information
+            b_time = broadcast_timer.stop();
+            checkCudaErrors(cudaMemcpy(d_x, x, n * sizeof(value_type), cudaMemcpyHostToDevice));
+            mult_timer.start();
+            cusp_spmv<4>(m, n, nnz, d_csrRowPtrA, d_csrColIdxA, d_csrValA, d_x, d_y);
+            m_time = mult_timer.stop();
+            checkCudaErrors(cudaMemcpy(y, d_y, m * sizeof(value_type), cudaMemcpyDeviceToHost));
+            reduce_timer.start();
+            MPI_Reduce(y, x, m, MPI_FLOAT, MPI_SUM, row_rank, commrow);
+            r_time = reduce_timer.stop();
+            if(i>=SKIP){
+                avg_b_time += b_time;
+                avg_m_time += m_time;
+                avg_r_time += r_time;
+            }
+        }
+    }
+    else if (nnz_per_row <=  8)
+    {
+        for (int i = 0; i < NUM_RUN; i++) {
+            broadcast_timer.start();
+            MPI_Bcast(x, m, MPI_FLOAT, col_rank, commcol); //col_rank is the one with the correct information
+            b_time = broadcast_timer.stop();
+            checkCudaErrors(cudaMemcpy(d_x, x, n * sizeof(value_type), cudaMemcpyHostToDevice));
+            mult_timer.start();
+            cusp_spmv<8>(m, n, nnz, d_csrRowPtrA, d_csrColIdxA, d_csrValA, d_x, d_y);
+            m_time = mult_timer.stop();
+            checkCudaErrors(cudaMemcpy(y, d_y, m * sizeof(value_type), cudaMemcpyDeviceToHost));
+            reduce_timer.start();
+            MPI_Reduce(y, x, m, MPI_FLOAT, MPI_SUM, row_rank, commrow);
+            r_time = reduce_timer.stop();
+            if(i>=SKIP){
+                avg_b_time += b_time;
+                avg_m_time += m_time;
+                avg_r_time += r_time;
+            }
+        }
+    }
+    else if (nnz_per_row <= 16)
+    {
+        for (int i = 0; i < NUM_RUN; i++) {
+            broadcast_timer.start();
+            MPI_Bcast(x, m, MPI_FLOAT, col_rank, commcol); //col_rank is the one with the correct information
+            b_time = broadcast_timer.stop();
+            checkCudaErrors(cudaMemcpy(d_x, x, n * sizeof(value_type), cudaMemcpyHostToDevice));
+            mult_timer.start();
+            cusp_spmv<16>(m, n, nnz, d_csrRowPtrA, d_csrColIdxA, d_csrValA, d_x, d_y);
+            m_time = mult_timer.stop();
+            checkCudaErrors(cudaMemcpy(y, d_y, m * sizeof(value_type), cudaMemcpyDeviceToHost));
+            reduce_timer.start();
+            MPI_Reduce(y, x, m, MPI_FLOAT, MPI_SUM, row_rank, commrow);
+            r_time = reduce_timer.stop();
+            if(i>=SKIP){
+                avg_b_time += b_time;
+                avg_m_time += m_time;
+                avg_r_time += r_time;
+            }
+        }
+    }
+    else
+    {
+        for (int i = 0; i < NUM_RUN; i++) {
+            broadcast_timer.start();
+            MPI_Bcast(x, m, MPI_FLOAT, col_rank, commcol); //col_rank is the one with the correct information
+            b_time = broadcast_timer.stop();
+            checkCudaErrors(cudaMemcpy(d_x, x, n * sizeof(value_type), cudaMemcpyHostToDevice));
+            mult_timer.start();
+            cusp_spmv<32>(m, n, nnz, d_csrRowPtrA, d_csrColIdxA, d_csrValA, d_x, d_y);
+            m_time = mult_timer.stop();
+            checkCudaErrors(cudaMemcpy(y, d_y, m * sizeof(value_type), cudaMemcpyDeviceToHost));
+            reduce_timer.start();
+            MPI_Reduce(y, x, m, MPI_FLOAT, MPI_SUM, row_rank, commrow);
+            r_time = reduce_timer.stop();
+            if(i>=SKIP){
+                avg_b_time += b_time;
+                avg_m_time += m_time;
+                avg_r_time += r_time;
+            }
+        }
+    }
+    checkCudaErrors(cudaDeviceSynchronize());
+    double cuspTime = cusp_timer.stop() / (NUM_RUN+SKIP);
+    int avg_nnz;
+    double avg_nnz_per_row, avgTime;
+    avg_b_time /= NUM_RUN;
+    avg_m_time /= NUM_RUN;
+    avg_r_time /= NUM_RUN;
+    MPI_Reduce(&nnz, &avg_nnz, 1, MPI_INT, MPI_SUM, MASTER, MPI_COMM_WORLD);
+    MPI_Reduce(&nnz_per_row, &avg_nnz_per_row, 1, MPI_DOUBLE, MPI_SUM, MASTER, MPI_COMM_WORLD);
+    MPI_Reduce(&avg_b_time, &b_time, 1, MPI_DOUBLE, MPI_SUM, MASTER, MPI_COMM_WORLD);
+    MPI_Reduce(&avg_m_time, &m_time, 1, MPI_DOUBLE, MPI_SUM, MASTER, MPI_COMM_WORLD);
+    MPI_Reduce(&avg_r_time, &r_time, 1, MPI_DOUBLE, MPI_SUM, MASTER, MPI_COMM_WORLD);
+    MPI_Reduce(&cuspTime, &avgTime, 1, MPI_DOUBLE, MPI_SUM, MASTER, MPI_COMM_WORLD);
+    avg_nnz /= nRanks;
+    avg_nnz_per_row /= nRanks;
+    b_time /= nRanks;
+    m_time /= nRanks;
+    r_time /= nRanks;
+    avgTime /= nRanks;
+    if(rank == MASTER) {
+        cout << "CUSP time = " << cuspTime
+             << " ms. Bandwidth = " << gb / (1.0e+6 * cuspTime)
+             << " GB/s. GFlops = " << gflop / (1.0e+6 * cuspTime) << " GFlops." << endl << endl;
 // run CUSP STOP
 
-    char outputFile[100] = "Results/CSR_CUDA_SpMV.csv";
-    FILE *resultCSV;
-    FILE *checkFile;
-    if ((checkFile = fopen(outputFile, "r")) != NULL) {
-        // file exists
-        fclose(checkFile);
-        if (!(resultCSV = fopen(outputFile, "a"))) {
-            fprintf(stderr, "fopen: failed to open %s file\n", outputFile);
-            exit(EXIT_FAILURE);
+        char outputFile[100] = "Results/CSR_CUDA_2DSpMV.csv";
+        FILE *resultCSV;
+        FILE *checkFile;
+        if ((checkFile = fopen(outputFile, "r")) != NULL) {
+            // file exists
+            fclose(checkFile);
+            if (!(resultCSV = fopen(outputFile, "a"))) {
+                fprintf(stderr, "fopen: failed to open %s file\n", outputFile);
+                exit(EXIT_FAILURE);
+            }
+        } else {
+            if (!(resultCSV = fopen(outputFile, "w"))) {
+                fprintf(stderr, "fopen: failed to open file %s\n", outputFile);
+                exit(EXIT_FAILURE);
+            }
+            fprintf(resultCSV,
+                    "Name,M,N,AvgTime,AvgBcastTime,AvgMultTime,AvgReduceTime,TotalRun,NonZeroPerRow,NonZeroElements,Bandwidth,Flops,ValueType,Type,Strides,TransactionByte,WordSize\n");
         }
-    } else {
-        if (!(resultCSV = fopen(outputFile, "w"))) {
+
+        fprintf(resultCSV, "%s,%d,%d,%10.6lf,%10.6lf,%10.6lf,%10.6lf,%d,%lf,%d,%lf,%lf,%d,%s,%ld,%d,%d\n", matName, m,
+                n, avgTime, b_time, m_time, r_time, (NUM_RUN + SKIP), avg_nnz_per_row, avg_nnz, gb/(1.0e+6 * avgTime),
+                gflop/(1.0e+6 * avgTime), sizeof(value_type), "CUSP", strideCounts, TRANSACTION_BYTE,
+                TRANSACTION_BYTE/sizeof(value_type));
+        if (fclose(resultCSV) != 0) {
             fprintf(stderr, "fopen: failed to open file %s\n", outputFile);
             exit(EXIT_FAILURE);
         }
-        fprintf(resultCSV, "Name,M,N,AvgTime,TotalRun,NonZeroPerRow,NonZeroElements,Bandwidth,Flops,ValueType,Type,Strides,TransactionByte,WordSize\n");
     }
-
-    fprintf(resultCSV, "%s,%d,%d,%10.6lf,%d,%lf,%d,%lf,%lf,%d,%s,%ld,%d,%d\n", matName, m, n, cuspTime, NUM_RUN, (double) nnz / m,
-            nnz, gb / (1.0e+6 * cuspTime), gflop / (1.0e+6 * cuspTime), sizeof(value_type), "CUSP", strideCounts,
-            TRANSACTION_BYTE, TRANSACTION_BYTE/ sizeof(value_type));
-    if (fclose(resultCSV) != 0) {
-        fprintf(stderr, "fopen: failed to open file %s\n", outputFile);
-        exit(EXIT_FAILURE);
-    }
-
-#if USE_SVM_ALWAYS
-    checkCudaErrors(cudaFree(svm_csrValA));
-    checkCudaErrors(cudaFree(svm_csrRowPtrA));
-    checkCudaErrors(cudaFree(svm_csrColIdxA));
-    checkCudaErrors(cudaFree(svm_x));
-    checkCudaErrors(cudaFree(svm_y));
-#else
     free(y_cusp_ref);
     checkCudaErrors(cudaFree(d_csrRowPtrA));
     checkCudaErrors(cudaFree(d_csrColIdxA));
     checkCudaErrors(cudaFree(d_csrValA));
     checkCudaErrors(cudaFree(d_x));
     checkCudaErrors(cudaFree(d_y));
-#endif
 
     return;
 }
@@ -670,6 +716,10 @@ int call_bhsparse(const char *datasetpath)
         //cout << "symmetric = false" << endl;
     }
 
+    firstRow = ceil(((double) n / sqrRank)) * (mpi_rank / sqrRank);
+    m = ceil(((double) n) / sqrRank);
+    firstCol = col_rank * m;
+
     int *csrRowPtrA_counter = (int *)malloc((m+1) * sizeof(int));
     memset(csrRowPtrA_counter, 0, (m+1) * sizeof(int));
 
@@ -704,12 +754,12 @@ int call_bhsparse(const char *datasetpath)
         idxi--;
         idxj--;
 
-        csrRowPtrA_counter[idxi]++;
-        csrRowIdxA_tmp[i] = idxi;
-        csrColIdxA_tmp[i] = idxj;
+        csrRowPtrA_counter[idxi - firstRow]++;
+        csrRowIdxA_tmp[i] = idxi - firstRow;
+        csrColIdxA_tmp[i] = idxj - firstCol;
         csrValA_tmp[i] = fval;
-        if (csrRowPtrA_counter[idxi] > max_deg) {
-            max_deg = csrRowPtrA_counter[idxi];
+        if (csrRowPtrA_counter[idxi - firstRow] > max_deg) {
+            max_deg = csrRowPtrA_counter[idxi - firstRow];
         }
     }
 
@@ -795,12 +845,12 @@ int call_bhsparse(const char *datasetpath)
     srand(time(NULL));
     for (int i = 0; i < nnzA; i++)
     {
-        csrValA[i] = rand() % 10;
+        csrValA[i] = 1.0/(ValueType)m;//rand() % 10;
     }
 
-    value_type *x = (value_type *)malloc(n * sizeof(value_type));
-    for (int i = 0; i < n; i++)
-        x[i] = rand() % 10;
+    value_type *x = (value_type *)malloc(m * sizeof(value_type));
+    for (int i = 0; i < m; i++)
+        x[i] = 1.0; //rand() % 10;
 
     value_type *y = (value_type *)malloc(m * sizeof(value_type));
     value_type *y_ref = (value_type *)malloc(m * sizeof(value_type));
@@ -860,12 +910,12 @@ int call_bhsparse(const char *datasetpath)
 
 
     // test OpenMP, cuSPARSE and CUSP v0.4.0
-    call_cusp_ref(m, n, nnzA, csrRowPtrA, csrColIdxA, csrValA, x, y, y_ref);
-    call_cusparse_ref(m, n, nnzA, csrRowPtrA, csrColIdxA, csrValA, x, y, y_ref);
+    call_cusp_ref(m, m, nnzA, csrRowPtrA, csrColIdxA, csrValA, x, y, y_ref);
+    call_cusparse_ref(m, m, nnzA, csrRowPtrA, csrColIdxA, csrValA, x, y, y_ref);
 //    call_omp_ref(m, n, nnzA, csrRowPtrA, csrColIdxA, csrValA, x, y, y_ref);
 
     // run bhSPARSE
-    err = bhsparse->prepare_mem(m, n, nnzA, csrRowPtrA, csrColIdxA, csrValA, x, y);
+    err = bhsparse->prepare_mem(m, m, nnzA, csrRowPtrA, csrColIdxA, csrValA, x, y);
 
     double time = 0.0;
     err = bhsparse->run_benchmark();
@@ -922,16 +972,25 @@ int call_bhsparse(const char *datasetpath)
 
 int main(int argc, char ** argv)
 {
-    int argi = 1, rank, nRanks;
+    int argi = 1;
     char *input;
-    char filename[100];
+    char filename[MAX_STRING_LENGTH];
     MPI_Init(&argc, &argv);
     MPI_Comm_size(MPI_COMM_WORLD, &nRanks);
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
     char processor_name[MPI_MAX_PROCESSOR_NAME];
     int name_len;
     MPI_Get_processor_name(processor_name, &name_len);
-    std::cout<<"[" << rank << ": " <<  processor_name << "] GPU 2d SpMV " << nRanks << " MPI ranks." <<std::endl;
+    std::cout<<"[" << rank << ": " <<  processor_name << "] GPU 2d SpMV " <<  << " MPI ranks " << rank << " of "
+    << nRanks << " starting...." << endl;
+    sqrRank = sqrt(nProcess);
+    row_rank = mpi_rank / sqrRank; //which col of proc am I
+    col_rank = mpi_rank % sqrRank; //which row of proc am I
+
+    //initialize communicators
+    MPI_Comm_split(MPI_COMM_WORLD, row_rank, mpi_rank, &commrow);
+
+    MPI_Comm_split(MPI_COMM_WORLD, col_rank, mpi_rank, &commcol);
     if(argc > argi)
     {
         input = argv[argi];
@@ -941,16 +1000,34 @@ int main(int argc, char ** argv)
         testType = atoi(argv[argi]);
         argi++;
     }
-    char destination[100];
-    strcpy(destination, input);
-    strcpy(filename, input);
-    /// Parse inpute file to get matrix name
-    char *_ptr = strtok(destination, "/");
-    matName = strtok(strtok(NULL, "+"), ".");
-    // use ./spmv example.mtx
-    // launch compute
     int err = 0;
-
+    char *file[MAX_STRING_LENGTH];
+    char *only_mat_name[MAX_STRING_LENGTH];
+    char n[MAX_STRING_LENGTH] = "";
+    char * ptr = strtok(input, "/");
+    int i=0,j;
+    while(ptr != NULL)
+    {
+        file[i++] = ptr;
+        ptr = strtok(NULL, "/");
+    }
+    for(j=0; j<i-1; ++j){
+        strcat(n, file[j]);
+        strcat(n, "/");
+    }
+    ptr = strtok(file[i-1], ".");
+    sprintf(filename, "%s%s_%d.mtx", n, ptr, rank);
+    char *good_format = strtok(ptr, "_");
+    i=0;
+    while(good_format != NULL)
+    {
+        only_mat_name[i++] = good_format;
+        good_format = strtok(NULL, "_");
+    }
+    for(j=0; j<i-2; ++j){
+        strcat(matName, only_mat_name[j]);
+        strcat(matName, "_");
+    }
     if (strcmp(filename, "0") == 0)
         err = call_bhsparse_small();
     else

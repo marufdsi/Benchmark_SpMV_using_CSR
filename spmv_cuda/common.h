@@ -40,6 +40,9 @@ typedef float   value_type;
 #ifndef NUM_RUN
 #define NUM_RUN      200
 #endif
+#ifndef SKIP
+#define SKIP      5
+#endif
 #define THREADBUNCH  32
 #define THREADGROUP  160
 
