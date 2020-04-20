@@ -8,7 +8,6 @@ long strideCounts = 0;
 char matName[MAX_STRING_LENGTH];
 int testType = 0, rank, nRanks, MASTER = 0, sqrRank, row_rank, col_rank, firstRow, firstCol, total_sparsity = 0,
 max_sparsity = 0, transactionByte = 128;
-long strideCounts = 0;
 MPI_Comm commrow;
 MPI_Comm commcol;
 
@@ -716,7 +715,7 @@ int call_bhsparse(const char *datasetpath)
         //cout << "symmetric = false" << endl;
     }
 
-    firstRow = ceil(((double) n / sqrRank)) * (mpi_rank / sqrRank);
+    firstRow = ceil(((double) n / sqrRank)) * (rank / sqrRank);
     m = ceil(((double) n) / sqrRank);
     firstCol = col_rank * m;
 
@@ -845,7 +844,7 @@ int call_bhsparse(const char *datasetpath)
     srand(time(NULL));
     for (int i = 0; i < nnzA; i++)
     {
-        csrValA[i] = 1.0/(ValueType)m;//rand() % 10;
+        csrValA[i] = 1.0/(ValueType)m; //rand() % 10;
     }
 
     value_type *x = (value_type *)malloc(m * sizeof(value_type));
@@ -984,13 +983,13 @@ int main(int argc, char ** argv)
     std::cout<<"[" << rank << ": " <<  processor_name << "] GPU 2d SpMV " <<  << " MPI ranks " << rank << " of "
     << nRanks << " starting...." << endl;
     sqrRank = sqrt(nProcess);
-    row_rank = mpi_rank / sqrRank; //which col of proc am I
-    col_rank = mpi_rank % sqrRank; //which row of proc am I
+    row_rank = rank / sqrRank; //which col of proc am I
+    col_rank = rank % sqrRank; //which row of proc am I
 
     //initialize communicators
-    MPI_Comm_split(MPI_COMM_WORLD, row_rank, mpi_rank, &commrow);
+    MPI_Comm_split(MPI_COMM_WORLD, row_rank, rank, &commrow);
 
-    MPI_Comm_split(MPI_COMM_WORLD, col_rank, mpi_rank, &commcol);
+    MPI_Comm_split(MPI_COMM_WORLD, col_rank, rank, &commcol);
     if(argc > argi)
     {
         input = argv[argi];
