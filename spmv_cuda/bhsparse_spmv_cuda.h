@@ -61,7 +61,7 @@ bhsparse_spmv_cuda::bhsparse_spmv_cuda()
 int bhsparse_spmv_cuda::init_platform(int device_id)
 {
     int err = 0;
-
+    cout<< "device id = " << device_id << endl;
     // set device
     cudaSetDevice(device_id);
     cudaDeviceProp deviceProp;

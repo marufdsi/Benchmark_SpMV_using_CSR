@@ -918,6 +918,7 @@ int call_bhsparse(const char *datasetpath)
 
 
     bhsparse_spmv_cuda *bhsparse = new bhsparse_spmv_cuda();
+    cout<< " rank sent to set device = " << mpi_rank << endl;
     err = bhsparse->init_platform(mpi_rank);
 
 
