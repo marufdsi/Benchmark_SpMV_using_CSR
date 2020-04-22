@@ -268,6 +268,7 @@ void call_cusp_ref(int m, int n, int nnz, int *csrRowPtrA, int *csrColIdxA, valu
     bhsparse_timer reduce_timer;
     cusp_timer.start();
     double b_time, r_time, m_time, avg_b_time = 0, avg_r_time = 0, avg_m_time = 0;
+    MPI_Barrier(MPI_COMM_WORLD);
     if (nnz_per_row <=  2)
     {
         for (int i = 0; i < NUM_RUN+SKIP; i++) {
@@ -287,6 +288,7 @@ void call_cusp_ref(int m, int n, int nnz, int *csrRowPtrA, int *csrColIdxA, valu
                 avg_m_time += m_time;
                 avg_r_time += r_time;
             }
+            MPI_Barrier(MPI_COMM_WORLD);
         }
     }
     else if (nnz_per_row <=  4)
@@ -308,6 +310,7 @@ void call_cusp_ref(int m, int n, int nnz, int *csrRowPtrA, int *csrColIdxA, valu
                 avg_m_time += m_time;
                 avg_r_time += r_time;
             }
+            MPI_Barrier(MPI_COMM_WORLD);
         }
     }
     else if (nnz_per_row <=  8)
@@ -329,6 +332,7 @@ void call_cusp_ref(int m, int n, int nnz, int *csrRowPtrA, int *csrColIdxA, valu
                 avg_m_time += m_time;
                 avg_r_time += r_time;
             }
+            MPI_Barrier(MPI_COMM_WORLD);
         }
     }
     else if (nnz_per_row <= 16)
@@ -350,6 +354,7 @@ void call_cusp_ref(int m, int n, int nnz, int *csrRowPtrA, int *csrColIdxA, valu
                 avg_m_time += m_time;
                 avg_r_time += r_time;
             }
+            MPI_Barrier(MPI_COMM_WORLD);
         }
     }
     else
@@ -371,8 +376,10 @@ void call_cusp_ref(int m, int n, int nnz, int *csrRowPtrA, int *csrColIdxA, valu
                 avg_m_time += m_time;
                 avg_r_time += r_time;
             }
+            MPI_Barrier(MPI_COMM_WORLD);
         }
     }
+    MPI_Barrier(MPI_COMM_WORLD);
     checkCudaErrors(cudaDeviceSynchronize());
     cout<< "Run complete" << endl;
     double cuspTime = cusp_timer.stop() / (NUM_RUN+SKIP);
