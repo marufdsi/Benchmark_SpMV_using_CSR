@@ -8,7 +8,7 @@ class bhsparse_spmv_cuda
 {
 public:
     bhsparse_spmv_cuda();
-    int init_platform();
+    int init_platform(int device_id = 0);
     int prepare_mem(int m, int n, int nnzA, int *csrRowPtrA, int *csrColIdxA, value_type *csrValA,
                     value_type *x, value_type *y);
     int run_benchmark();
@@ -58,12 +58,11 @@ bhsparse_spmv_cuda::bhsparse_spmv_cuda()
 {
 }
 
-int bhsparse_spmv_cuda::init_platform()
+int bhsparse_spmv_cuda::init_platform(int device_id)
 {
     int err = 0;
 
     // set device
-    int device_id = 0;
     cudaSetDevice(device_id);
     cudaDeviceProp deviceProp;
     cudaGetDeviceProperties(&deviceProp, device_id);
