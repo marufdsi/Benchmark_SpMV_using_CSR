@@ -249,7 +249,7 @@ void call_cusp_ref(int m, int n, int nnz, int *csrRowPtrA, int *csrColIdxA, valu
 
     int error_count = 0;
     for (int i = 0; i < m; i++)
-        if (y_ref[i] != y_cusp_ref[i])
+        if (abs(y_ref[i] - y_cusp_ref[i]) > 0.01 * abs(y_ref[i])/*y_ref[i] != y_cusp_ref[i]*/)
             error_count++;
     if (error_count)
         cout << "NO PASS. Error count = " << error_count << " out of " << m << " entries.";
