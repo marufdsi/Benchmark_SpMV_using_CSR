@@ -374,6 +374,7 @@ void call_cusp_ref(int m, int n, int nnz, int *csrRowPtrA, int *csrColIdxA, valu
         }
     }
     checkCudaErrors(cudaDeviceSynchronize());
+    cout<< "Run complete" << endl;
     double cuspTime = cusp_timer.stop() / (NUM_RUN+SKIP);
     int avg_nnz;
     double avg_nnz_per_row, avgTime;
