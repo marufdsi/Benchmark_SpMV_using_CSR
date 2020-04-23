@@ -299,7 +299,6 @@ void call_cusp_ref(int m, int n, int nnz, int *csrRowPtrA, int *csrColIdxA, valu
     {
         MPI_Barrier(MPI_COMM_WORLD);
         for (int i = 0; i < NUM_RUN+SKIP; i++) {
-            cout << "[" << mpi_rank << "] 4-iter= " << i+1 << " mat= " << matName << endl;
             broadcast_timer.start();
             MPI_Bcast(x, m, MPI_FLOAT, col_rank, commcol); //col_rank is the one with the correct information
             b_time = broadcast_timer.stop();
@@ -325,7 +324,6 @@ void call_cusp_ref(int m, int n, int nnz, int *csrRowPtrA, int *csrColIdxA, valu
         cout<< "THREADS_PER_VECTOR = 8" << endl;
         MPI_Barrier(MPI_COMM_WORLD);
         for (int i = 0; i < NUM_RUN+SKIP; i++) {
-            cout << "[" << mpi_rank << "] 8-iter= " << i+1 << " mat= " << matName << endl;
             broadcast_timer.start();
             MPI_Bcast(x, m, MPI_FLOAT, col_rank, commcol); //col_rank is the one with the correct information
             b_time = broadcast_timer.stop();
@@ -351,14 +349,6 @@ void call_cusp_ref(int m, int n, int nnz, int *csrRowPtrA, int *csrColIdxA, valu
         cout<< "[" << mpi_rank << "] THREADS_PER_VECTOR = 16" << endl;
         MPI_Barrier(MPI_COMM_WORLD);
         for (int i = 0; i < NUM_RUN; i++) {
-            if(i==19){
-                for (int j = 0; j < 10; ++j) {
-                    cout<< "[" << mpi_rank << "] 16: " ;
-                    cout << x[j] << " ";
-                }
-                cout<<endl;
-            }
-            cout << "[" << mpi_rank << "] 16-iter= " << i+1 << " mat= " << matName << endl;
             broadcast_timer.start();
             MPI_Bcast(x, m, MPI_FLOAT, col_rank, commcol); //col_rank is the one with the correct information
             b_time = broadcast_timer.stop();
@@ -384,14 +374,6 @@ void call_cusp_ref(int m, int n, int nnz, int *csrRowPtrA, int *csrColIdxA, valu
         cout<< "THREADS_PER_VECTOR = 32" << endl;
         MPI_Barrier(MPI_COMM_WORLD);
         for (int i = 0; i < NUM_RUN+SKIP; i++) {
-            if(i==20){
-                for (int j = 0; j < 10; ++j) {
-                    cout<< "[" << mpi_rank << "] 32: ";
-                    cout << x[j] << " ";
-                }
-                cout<<endl;
-            }
-            cout << "[" << mpi_rank << "] 32-iter= " << i+1 << " mat= " << matName << endl;
             broadcast_timer.start();
             MPI_Bcast(x, m, MPI_FLOAT, col_rank, commcol); //col_rank is the one with the correct information
             b_time = broadcast_timer.stop();
