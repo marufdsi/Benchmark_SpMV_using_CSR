@@ -271,6 +271,7 @@ void call_cusp_ref(int m, int n, int nnz, int *csrRowPtrA, int *csrColIdxA, valu
     MPI_Barrier(MPI_COMM_WORLD);
     if (nnz_per_row <=  2)
     {
+        cout<< "THREADS_PER_VECTOR = 2" << endl;
         for (int i = 0; i < NUM_RUN+SKIP; i++) {
             broadcast_timer.start();
             MPI_Bcast(x, m, MPI_FLOAT, col_rank, commcol); //col_rank is the one with the correct information
@@ -294,7 +295,7 @@ void call_cusp_ref(int m, int n, int nnz, int *csrRowPtrA, int *csrColIdxA, valu
     }
     else if (nnz_per_row <=  4)
     {
-        for (int i = 0; i < NUM_RUN; i++) {
+        for (int i = 0; i < NUM_RUN+SKIP; i++) {
             broadcast_timer.start();
             MPI_Bcast(x, m, MPI_FLOAT, col_rank, commcol); //col_rank is the one with the correct information
             b_time = broadcast_timer.stop();
@@ -317,7 +318,8 @@ void call_cusp_ref(int m, int n, int nnz, int *csrRowPtrA, int *csrColIdxA, valu
     }
     else if (nnz_per_row <=  8)
     {
-        for (int i = 0; i < NUM_RUN; i++) {
+        cout<< "THREADS_PER_VECTOR = 8" << endl;
+        for (int i = 0; i < NUM_RUN+SKIP; i++) {
             broadcast_timer.start();
             MPI_Bcast(x, m, MPI_FLOAT, col_rank, commcol); //col_rank is the one with the correct information
             b_time = broadcast_timer.stop();
@@ -340,6 +342,7 @@ void call_cusp_ref(int m, int n, int nnz, int *csrRowPtrA, int *csrColIdxA, valu
     }
     else if (nnz_per_row <= 16)
     {
+        cout<< "THREADS_PER_VECTOR = 16" << endl;
         for (int i = 0; i < NUM_RUN; i++) {
             broadcast_timer.start();
             MPI_Bcast(x, m, MPI_FLOAT, col_rank, commcol); //col_rank is the one with the correct information
@@ -363,7 +366,8 @@ void call_cusp_ref(int m, int n, int nnz, int *csrRowPtrA, int *csrColIdxA, valu
     }
     else
     {
-        for (int i = 0; i < NUM_RUN; i++) {
+        cout<< "THREADS_PER_VECTOR = 32" << endl;
+        for (int i = 0; i < NUM_RUN+SKIP; i++) {
             broadcast_timer.start();
             MPI_Bcast(x, m, MPI_FLOAT, col_rank, commcol); //col_rank is the one with the correct information
             b_time = broadcast_timer.stop();

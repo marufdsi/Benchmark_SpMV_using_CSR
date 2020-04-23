@@ -38,7 +38,7 @@ typedef float   value_type;
 #define TRANSACTION_BYTE      128
 #endif
 #ifndef NUM_RUN
-#define NUM_RUN      200
+#define NUM_RUN      20
 #endif
 #ifndef SKIP
 #define SKIP      5
