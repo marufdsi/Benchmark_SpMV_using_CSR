@@ -292,6 +292,8 @@ void call_cusp_ref(int m, int n, int nnz, int *csrRowPtrA, int *csrColIdxA, valu
                 avg_m_time += m_time;
                 avg_r_time += r_time;
             }
+            MPI_Barrier(commcol);
+            MPI_Barrier(commrow);
             MPI_Barrier(MPI_COMM_WORLD);
         }
     }
@@ -317,6 +319,8 @@ void call_cusp_ref(int m, int n, int nnz, int *csrRowPtrA, int *csrColIdxA, valu
                 avg_m_time += m_time;
                 avg_r_time += r_time;
             }
+            MPI_Barrier(commcol);
+            MPI_Barrier(commrow);
             MPI_Barrier(MPI_COMM_WORLD);
         }
     }
@@ -343,6 +347,8 @@ void call_cusp_ref(int m, int n, int nnz, int *csrRowPtrA, int *csrColIdxA, valu
                 avg_m_time += m_time;
                 avg_r_time += r_time;
             }
+            MPI_Barrier(commcol);
+            MPI_Barrier(commrow);
             MPI_Barrier(MPI_COMM_WORLD);
         }
     }
@@ -376,6 +382,8 @@ void call_cusp_ref(int m, int n, int nnz, int *csrRowPtrA, int *csrColIdxA, valu
                 avg_m_time += m_time;
                 avg_r_time += r_time;
             }
+            MPI_Barrier(commcol);
+            MPI_Barrier(commrow);
             MPI_Barrier(MPI_COMM_WORLD);
         }
     }
@@ -409,6 +417,8 @@ void call_cusp_ref(int m, int n, int nnz, int *csrRowPtrA, int *csrColIdxA, valu
                 avg_m_time += m_time;
                 avg_r_time += r_time;
             }
+            MPI_Barrier(commcol);
+            MPI_Barrier(commrow);
             MPI_Barrier(MPI_COMM_WORLD);
         }
     }
