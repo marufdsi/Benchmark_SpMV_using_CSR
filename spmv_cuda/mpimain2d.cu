@@ -269,10 +269,10 @@ void call_cusp_ref(int m, int n, int nnz, int *csrRowPtrA, int *csrColIdxA, valu
     bhsparse_timer reduce_timer;
     cusp_timer.start();
     double b_time, r_time, m_time, avg_b_time = 0, avg_r_time = 0, avg_m_time = 0;
-    MPI_Barrier(MPI_COMM_WORLD);
     if (nnz_per_row <=  2)
     {
         cout<< "THREADS_PER_VECTOR = 2" << endl;
+        MPI_Barrier(MPI_COMM_WORLD);
         for (int i = 0; i < NUM_RUN+SKIP; i++) {
             cout << "[" << mpi_rank << "] 2-iter= " << i+1 << " mat= " << matName << endl;
             broadcast_timer.start();
@@ -284,7 +284,6 @@ void call_cusp_ref(int m, int n, int nnz, int *csrRowPtrA, int *csrColIdxA, valu
             cusp_spmv<2>(m, n, nnz, d_csrRowPtrA, d_csrColIdxA, d_csrValA, d_x, d_y);
             m_time = mult_timer.stop();
             checkCudaErrors(cudaMemcpy(y, d_y, m * sizeof(value_type), cudaMemcpyDeviceToHost));
-            checkCudaErrors(cudaDeviceSynchronize());
             reduce_timer.start();
             MPI_Reduce(y, x, m, MPI_FLOAT, MPI_SUM, row_rank, commrow);
             r_time = reduce_timer.stop();
@@ -298,6 +297,7 @@ void call_cusp_ref(int m, int n, int nnz, int *csrRowPtrA, int *csrColIdxA, valu
     }
     else if (nnz_per_row <=  4)
     {
+        MPI_Barrier(MPI_COMM_WORLD);
         for (int i = 0; i < NUM_RUN+SKIP; i++) {
             cout << "[" << mpi_rank << "] 4-iter= " << i+1 << " mat= " << matName << endl;
             broadcast_timer.start();
@@ -309,7 +309,6 @@ void call_cusp_ref(int m, int n, int nnz, int *csrRowPtrA, int *csrColIdxA, valu
             cusp_spmv<4>(m, n, nnz, d_csrRowPtrA, d_csrColIdxA, d_csrValA, d_x, d_y);
             m_time = mult_timer.stop();
             checkCudaErrors(cudaMemcpy(y, d_y, m * sizeof(value_type), cudaMemcpyDeviceToHost));
-            checkCudaErrors(cudaDeviceSynchronize());
             reduce_timer.start();
             MPI_Reduce(y, x, m, MPI_FLOAT, MPI_SUM, row_rank, commrow);
             r_time = reduce_timer.stop();
@@ -324,6 +323,7 @@ void call_cusp_ref(int m, int n, int nnz, int *csrRowPtrA, int *csrColIdxA, valu
     else if (nnz_per_row <=  8)
     {
         cout<< "THREADS_PER_VECTOR = 8" << endl;
+        MPI_Barrier(MPI_COMM_WORLD);
         for (int i = 0; i < NUM_RUN+SKIP; i++) {
             cout << "[" << mpi_rank << "] 8-iter= " << i+1 << " mat= " << matName << endl;
             broadcast_timer.start();
@@ -335,7 +335,6 @@ void call_cusp_ref(int m, int n, int nnz, int *csrRowPtrA, int *csrColIdxA, valu
             cusp_spmv<8>(m, n, nnz, d_csrRowPtrA, d_csrColIdxA, d_csrValA, d_x, d_y);
             m_time = mult_timer.stop();
             checkCudaErrors(cudaMemcpy(y, d_y, m * sizeof(value_type), cudaMemcpyDeviceToHost));
-            checkCudaErrors(cudaDeviceSynchronize());
             reduce_timer.start();
             MPI_Reduce(y, x, m, MPI_FLOAT, MPI_SUM, row_rank, commrow);
             r_time = reduce_timer.stop();
@@ -350,6 +349,7 @@ void call_cusp_ref(int m, int n, int nnz, int *csrRowPtrA, int *csrColIdxA, valu
     else if (nnz_per_row <= 16)
     {
         cout<< "[" << mpi_rank << "] THREADS_PER_VECTOR = 16" << endl;
+        MPI_Barrier(MPI_COMM_WORLD);
         for (int i = 0; i < NUM_RUN; i++) {
             cout << "[" << mpi_rank << "] 16-iter= " << i+1 << " mat= " << matName << endl;
             broadcast_timer.start();
@@ -361,7 +361,6 @@ void call_cusp_ref(int m, int n, int nnz, int *csrRowPtrA, int *csrColIdxA, valu
             cusp_spmv<16>(m, n, nnz, d_csrRowPtrA, d_csrColIdxA, d_csrValA, d_x, d_y);
             m_time = mult_timer.stop();
             checkCudaErrors(cudaMemcpy(y, d_y, m * sizeof(value_type), cudaMemcpyDeviceToHost));
-            checkCudaErrors(cudaDeviceSynchronize());
             reduce_timer.start();
             MPI_Reduce(y, x, m, MPI_FLOAT, MPI_SUM, row_rank, commrow);
             r_time = reduce_timer.stop();
@@ -376,6 +375,7 @@ void call_cusp_ref(int m, int n, int nnz, int *csrRowPtrA, int *csrColIdxA, valu
     else
     {
         cout<< "THREADS_PER_VECTOR = 32" << endl;
+        MPI_Barrier(MPI_COMM_WORLD);
         for (int i = 0; i < NUM_RUN+SKIP; i++) {
             cout << "[" << mpi_rank << "] 32-iter= " << i+1 << " mat= " << matName << endl;
             broadcast_timer.start();
@@ -387,7 +387,6 @@ void call_cusp_ref(int m, int n, int nnz, int *csrRowPtrA, int *csrColIdxA, valu
             cusp_spmv<32>(m, n, nnz, d_csrRowPtrA, d_csrColIdxA, d_csrValA, d_x, d_y);
             m_time = mult_timer.stop();
             checkCudaErrors(cudaMemcpy(y, d_y, m * sizeof(value_type), cudaMemcpyDeviceToHost));
-            checkCudaErrors(cudaDeviceSynchronize());
             reduce_timer.start();
             MPI_Reduce(y, x, m, MPI_FLOAT, MPI_SUM, row_rank, commrow);
             r_time = reduce_timer.stop();
@@ -399,9 +398,9 @@ void call_cusp_ref(int m, int n, int nnz, int *csrRowPtrA, int *csrColIdxA, valu
             MPI_Barrier(MPI_COMM_WORLD);
         }
     }
-    MPI_Barrier(MPI_COMM_WORLD);
 
-    cout<< "Run complete" << endl;
+    MPI_Barrier(MPI_COMM_WORLD);
+    checkCudaErrors(cudaDeviceSynchronize());    cout<< "Run complete" << endl;
     double cuspTime = cusp_timer.stop() / (NUM_RUN+SKIP);
     int avg_nnz;
     double avg_nnz_per_row, avgTime;
