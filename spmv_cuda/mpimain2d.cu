@@ -279,6 +279,7 @@ void call_cusp_ref(int m, int n, int nnz, int *csrRowPtrA, int *csrColIdxA, valu
             MPI_Bcast(x, m, MPI_FLOAT, col_rank, commcol); //col_rank is the one with the correct information
             b_time = broadcast_timer.stop();
             checkCudaErrors(cudaMemcpy(d_x, x, n * sizeof(value_type), cudaMemcpyHostToDevice));
+            checkCudaErrors(cudaMemcpy(d_y, y, m * sizeof(value_type), cudaMemcpyHostToDevice));
             mult_timer.start();
             cusp_spmv<2>(m, n, nnz, d_csrRowPtrA, d_csrColIdxA, d_csrValA, d_x, d_y);
             m_time = mult_timer.stop();
@@ -303,6 +304,7 @@ void call_cusp_ref(int m, int n, int nnz, int *csrRowPtrA, int *csrColIdxA, valu
             MPI_Bcast(x, m, MPI_FLOAT, col_rank, commcol); //col_rank is the one with the correct information
             b_time = broadcast_timer.stop();
             checkCudaErrors(cudaMemcpy(d_x, x, n * sizeof(value_type), cudaMemcpyHostToDevice));
+            checkCudaErrors(cudaMemcpy(d_y, y, m * sizeof(value_type), cudaMemcpyHostToDevice));
             mult_timer.start();
             cusp_spmv<4>(m, n, nnz, d_csrRowPtrA, d_csrColIdxA, d_csrValA, d_x, d_y);
             m_time = mult_timer.stop();
@@ -328,6 +330,7 @@ void call_cusp_ref(int m, int n, int nnz, int *csrRowPtrA, int *csrColIdxA, valu
             MPI_Bcast(x, m, MPI_FLOAT, col_rank, commcol); //col_rank is the one with the correct information
             b_time = broadcast_timer.stop();
             checkCudaErrors(cudaMemcpy(d_x, x, n * sizeof(value_type), cudaMemcpyHostToDevice));
+            checkCudaErrors(cudaMemcpy(d_y, y, m * sizeof(value_type), cudaMemcpyHostToDevice));
             mult_timer.start();
             cusp_spmv<8>(m, n, nnz, d_csrRowPtrA, d_csrColIdxA, d_csrValA, d_x, d_y);
             m_time = mult_timer.stop();
@@ -353,6 +356,7 @@ void call_cusp_ref(int m, int n, int nnz, int *csrRowPtrA, int *csrColIdxA, valu
             MPI_Bcast(x, m, MPI_FLOAT, col_rank, commcol); //col_rank is the one with the correct information
             b_time = broadcast_timer.stop();
             checkCudaErrors(cudaMemcpy(d_x, x, n * sizeof(value_type), cudaMemcpyHostToDevice));
+            checkCudaErrors(cudaMemcpy(d_y, y, m * sizeof(value_type), cudaMemcpyHostToDevice));
             mult_timer.start();
             cusp_spmv<16>(m, n, nnz, d_csrRowPtrA, d_csrColIdxA, d_csrValA, d_x, d_y);
             m_time = mult_timer.stop();
@@ -378,6 +382,7 @@ void call_cusp_ref(int m, int n, int nnz, int *csrRowPtrA, int *csrColIdxA, valu
             MPI_Bcast(x, m, MPI_FLOAT, col_rank, commcol); //col_rank is the one with the correct information
             b_time = broadcast_timer.stop();
             checkCudaErrors(cudaMemcpy(d_x, x, n * sizeof(value_type), cudaMemcpyHostToDevice));
+            checkCudaErrors(cudaMemcpy(d_y, y, m * sizeof(value_type), cudaMemcpyHostToDevice));
             mult_timer.start();
             cusp_spmv<32>(m, n, nnz, d_csrRowPtrA, d_csrColIdxA, d_csrValA, d_x, d_y);
             m_time = mult_timer.stop();
