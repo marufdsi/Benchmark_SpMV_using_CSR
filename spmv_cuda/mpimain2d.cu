@@ -353,7 +353,8 @@ void call_cusp_ref(int m, int n, int nnz, int *csrRowPtrA, int *csrColIdxA, valu
         for (int i = 0; i < NUM_RUN; i++) {
             if(i==20){
                 for (int j = 0; j < 10; ++j) {
-                    cout<< "[" << mpi_rank << "] 16: " << x[j] << " ";
+                    cout<< "[" << mpi_rank << "] 16: " ;
+                    cout << x[j] << " ";
                 }
                 cout<<endl;
             }
@@ -385,7 +386,8 @@ void call_cusp_ref(int m, int n, int nnz, int *csrRowPtrA, int *csrColIdxA, valu
         for (int i = 0; i < NUM_RUN+SKIP; i++) {
             if(i==21){
                 for (int j = 0; j < 10; ++j) {
-                    cout<< "[" << mpi_rank << "] 32: " << x[j] << " ";
+                    cout<< "[" << mpi_rank << "] 32: ";
+                    cout << x[j] << " ";
                 }
                 cout<<endl;
             }
