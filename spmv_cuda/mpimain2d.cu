@@ -351,7 +351,7 @@ void call_cusp_ref(int m, int n, int nnz, int *csrRowPtrA, int *csrColIdxA, valu
         cout<< "[" << mpi_rank << "] THREADS_PER_VECTOR = 16" << endl;
         MPI_Barrier(MPI_COMM_WORLD);
         for (int i = 0; i < NUM_RUN; i++) {
-            if(i==20){
+            if(i==19){
                 for (int j = 0; j < 10; ++j) {
                     cout<< "[" << mpi_rank << "] 16: " ;
                     cout << x[j] << " ";
@@ -384,7 +384,7 @@ void call_cusp_ref(int m, int n, int nnz, int *csrRowPtrA, int *csrColIdxA, valu
         cout<< "THREADS_PER_VECTOR = 32" << endl;
         MPI_Barrier(MPI_COMM_WORLD);
         for (int i = 0; i < NUM_RUN+SKIP; i++) {
-            if(i==21){
+            if(i==20){
                 for (int j = 0; j < 10; ++j) {
                     cout<< "[" << mpi_rank << "] 32: ";
                     cout << x[j] << " ";
