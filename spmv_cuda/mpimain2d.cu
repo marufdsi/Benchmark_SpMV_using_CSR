@@ -246,6 +246,7 @@ void call_cusp_ref(int m, int n, int nnz, int *csrRowPtrA, int *csrColIdxA, valu
     cusp_spmv<32>(m, n, nnz, d_csrRowPtrA, d_csrColIdxA, d_csrValA, d_x, d_y);
     value_type *y_cusp_ref = (value_type *)malloc(m * sizeof(value_type));
     checkCudaErrors(cudaMemcpy(y_cusp_ref, d_y, m * sizeof(value_type), cudaMemcpyDeviceToHost));
+    checkCudaErrors(cudaDeviceSynchronize());
 
     int error_count = 0;
     for (int i = 0; i < m; i++)
@@ -281,6 +282,7 @@ void call_cusp_ref(int m, int n, int nnz, int *csrRowPtrA, int *csrColIdxA, valu
             cusp_spmv<2>(m, n, nnz, d_csrRowPtrA, d_csrColIdxA, d_csrValA, d_x, d_y);
             m_time = mult_timer.stop();
             checkCudaErrors(cudaMemcpy(y, d_y, m * sizeof(value_type), cudaMemcpyDeviceToHost));
+            checkCudaErrors(cudaDeviceSynchronize());
             reduce_timer.start();
             MPI_Reduce(y, x, m, MPI_FLOAT, MPI_SUM, row_rank, commrow);
             r_time = reduce_timer.stop();
@@ -289,7 +291,6 @@ void call_cusp_ref(int m, int n, int nnz, int *csrRowPtrA, int *csrColIdxA, valu
                 avg_m_time += m_time;
                 avg_r_time += r_time;
             }
-            checkCudaErrors(cudaDeviceSynchronize());
             MPI_Barrier(MPI_COMM_WORLD);
         }
     }
@@ -328,6 +329,7 @@ void call_cusp_ref(int m, int n, int nnz, int *csrRowPtrA, int *csrColIdxA, valu
             cusp_spmv<8>(m, n, nnz, d_csrRowPtrA, d_csrColIdxA, d_csrValA, d_x, d_y);
             m_time = mult_timer.stop();
             checkCudaErrors(cudaMemcpy(y, d_y, m * sizeof(value_type), cudaMemcpyDeviceToHost));
+            checkCudaErrors(cudaDeviceSynchronize());
             reduce_timer.start();
             MPI_Reduce(y, x, m, MPI_FLOAT, MPI_SUM, row_rank, commrow);
             r_time = reduce_timer.stop();
@@ -336,7 +338,6 @@ void call_cusp_ref(int m, int n, int nnz, int *csrRowPtrA, int *csrColIdxA, valu
                 avg_m_time += m_time;
                 avg_r_time += r_time;
             }
-            checkCudaErrors(cudaDeviceSynchronize());
             MPI_Barrier(MPI_COMM_WORLD);
         }
     }
@@ -352,6 +353,7 @@ void call_cusp_ref(int m, int n, int nnz, int *csrRowPtrA, int *csrColIdxA, valu
             cusp_spmv<16>(m, n, nnz, d_csrRowPtrA, d_csrColIdxA, d_csrValA, d_x, d_y);
             m_time = mult_timer.stop();
             checkCudaErrors(cudaMemcpy(y, d_y, m * sizeof(value_type), cudaMemcpyDeviceToHost));
+            checkCudaErrors(cudaDeviceSynchronize());
             reduce_timer.start();
             MPI_Reduce(y, x, m, MPI_FLOAT, MPI_SUM, row_rank, commrow);
             r_time = reduce_timer.stop();
@@ -360,7 +362,6 @@ void call_cusp_ref(int m, int n, int nnz, int *csrRowPtrA, int *csrColIdxA, valu
                 avg_m_time += m_time;
                 avg_r_time += r_time;
             }
-            checkCudaErrors(cudaDeviceSynchronize());
             MPI_Barrier(MPI_COMM_WORLD);
         }
     }
@@ -376,6 +377,7 @@ void call_cusp_ref(int m, int n, int nnz, int *csrRowPtrA, int *csrColIdxA, valu
             cusp_spmv<32>(m, n, nnz, d_csrRowPtrA, d_csrColIdxA, d_csrValA, d_x, d_y);
             m_time = mult_timer.stop();
             checkCudaErrors(cudaMemcpy(y, d_y, m * sizeof(value_type), cudaMemcpyDeviceToHost));
+            checkCudaErrors(cudaDeviceSynchronize());
             reduce_timer.start();
             MPI_Reduce(y, x, m, MPI_FLOAT, MPI_SUM, row_rank, commrow);
             r_time = reduce_timer.stop();
@@ -384,7 +386,6 @@ void call_cusp_ref(int m, int n, int nnz, int *csrRowPtrA, int *csrColIdxA, valu
                 avg_m_time += m_time;
                 avg_r_time += r_time;
             }
-            checkCudaErrors(cudaDeviceSynchronize());
             MPI_Barrier(MPI_COMM_WORLD);
         }
     }
@@ -443,6 +444,7 @@ void call_cusp_ref(int m, int n, int nnz, int *csrRowPtrA, int *csrColIdxA, valu
             exit(EXIT_FAILURE);
         }
     }
+    checkCudaErrors(cudaDeviceSynchronize());
     free(y_cusp_ref);
     checkCudaErrors(cudaFree(d_csrRowPtrA));
     checkCudaErrors(cudaFree(d_csrColIdxA));
