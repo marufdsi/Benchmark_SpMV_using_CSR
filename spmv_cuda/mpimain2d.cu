@@ -886,7 +886,7 @@ int call_bhsparse(const char *datasetpath)
     srand(time(NULL));
     for (int i = 0; i < nnzA; i++)
     {
-        csrValA[i] = 1.0/(value_type)m;
+        csrValA[i] = 0.1;//1.0/(value_type)m;
     }
 
     value_type *x = (value_type *)malloc(m * sizeof(value_type));
