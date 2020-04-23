@@ -1043,7 +1043,8 @@ int main(int argc, char ** argv)
     }
     for(j=0; j<i-2; ++j){
         strcat(matName, only_mat_name[j]);
-        strcat(matName, "_");
+        if(j < i-3)
+            strcat(matName, "_");
     }
     if (strcmp(filename, "0") == 0)
         err = call_bhsparse_small();
