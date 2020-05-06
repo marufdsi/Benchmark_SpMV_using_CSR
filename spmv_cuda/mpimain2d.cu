@@ -1046,7 +1046,7 @@ int main(int argc, char ** argv)
 #else /* !defined(MPIX_CUDA_AWARE_SUPPORT) */
     printf("This MPI library cannot determine if there is CUDA-aware support.\n");
 #endif /* MPIX_CUDA_AWARE_SUPPORT */
-
+    return 0;
     int argi = 1;
     char *input;
     char filename[MAX_STRING_LENGTH];
