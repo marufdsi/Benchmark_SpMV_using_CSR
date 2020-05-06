@@ -3,6 +3,9 @@
 #include "mmio.h"
 #include <unordered_set>
 #include<mpi.h>
+#ifdef
+#include "mpi-ext.h" /* Needed for CUDA-aware check */
+#endif
 #define MAX_STRING_LENGTH 128
 long strideCounts = 0;
 char matName[MAX_STRING_LENGTH];
@@ -1024,6 +1027,26 @@ int call_bhsparse(const char *datasetpath)
 
 int main(int argc, char ** argv)
 {
+
+#if defined(MPIX_CUDA_AWARE_SUPPORT) && MPIX_CUDA_AWARE_SUPPORT
+    printf("This MPI library has CUDA-aware support.\n", MPIX_CUDA_AWARE_SUPPORT);
+#elif defined(MPIX_CUDA_AWARE_SUPPORT) && !MPIX_CUDA_AWARE_SUPPORT
+    printf("This MPI library does not have CUDA-aware support.\n");
+#else
+    printf("This MPI library cannot determine if there is CUDA-aware support.\n");
+#endif /* MPIX_CUDA_AWARE_SUPPORT */
+
+    printf("Run time check:\n");
+#if defined(MPIX_CUDA_AWARE_SUPPORT)
+    if (1 == MPIX_Query_cuda_support()) {
+        printf("This MPI library has CUDA-aware support.\n");
+    } else {
+        printf("This MPI library does not have CUDA-aware support.\n");
+    }
+#else /* !defined(MPIX_CUDA_AWARE_SUPPORT) */
+    printf("This MPI library cannot determine if there is CUDA-aware support.\n");
+#endif /* MPIX_CUDA_AWARE_SUPPORT */
+
     int argi = 1;
     char *input;
     char filename[MAX_STRING_LENGTH];
