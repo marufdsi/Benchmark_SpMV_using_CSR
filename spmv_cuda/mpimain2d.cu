@@ -3,9 +3,9 @@
 #include "mmio.h"
 #include <unordered_set>
 #include<mpi.h>
-#ifdef
+
 #include "mpi-ext.h" /* Needed for CUDA-aware check */
-#endif
+
 #define MAX_STRING_LENGTH 128
 long strideCounts = 0;
 char matName[MAX_STRING_LENGTH];
