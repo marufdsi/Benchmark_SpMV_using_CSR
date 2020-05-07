@@ -19,7 +19,8 @@ USE_SVM_ALWAYS = 0
 NUM_RUN = 10
 TRANSACTION_BYTE = 128
 #includes
-CUDA_INSTALL_PATH = /apps/pkg/cuda/9.2
+# CUDA_INSTALL_PATH = /apps/pkg/cuda/9.2
+CUDA_INSTALL_PATH = /apps/pkg/cuda/10.2
 INCLUDES = -I$(CUDA_INSTALL_PATH)/include -I$(CUDA_INSTALL_PATH)/samples/common/inc
 
 #libs
