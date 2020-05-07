@@ -19,13 +19,13 @@ USE_SVM_ALWAYS = 0
 NUM_RUN = 10
 TRANSACTION_BYTE = 128
 #includes
-# CUDA_INSTALL_PATH = /apps/pkg/cuda/9.2
-# SAMPLE = samples
-CUDA_INSTALL_PATH = /apps/pkg/cuda/10.2
-SAMPLE = NVIDIA_CUDA-10.2_Samples
+CUDA_INSTALL_PATH = /apps/pkg/cuda/9.2
+SAMPLE = samples
+# CUDA_INSTALL_PATH = /apps/pkg/cuda/10.2
+# SAMPLE = NVIDIA_CUDA-10.2_Samples
 INCLUDES = -I$(CUDA_INSTALL_PATH)/include -I$(CUDA_INSTALL_PATH)/$(SAMPLE)/common/inc
 #libs
-CUDA_LIBS = -L$(CUDA_INSTALL_PATH)/lib64 -lcudart -lcusparse
+CUDA_LIBS = -L$(CUDA_INSTALL_PATH)/lib -lcudart -lcusparse
 LIBS = $(CUDA_LIBS)
 
 all:
