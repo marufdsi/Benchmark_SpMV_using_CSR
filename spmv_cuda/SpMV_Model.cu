@@ -9,6 +9,7 @@ int testType = 0;
 typedef int Idx;
 int nnz_per_block, mat_row;
 int save_mat=0;
+int _SUCCESS = 0;
 cusparseStatus_t cusparse_spmv(cusparseHandle_t handle, cusparseMatDescr_t descr,
                    int m, int n, int nnz, 
                    int *csrRowPtrA, int *csrColIdxA, double *csrValA, 
@@ -489,6 +490,7 @@ void call_omp_ref(int m, int n, int nnz,
 
 Idx create_random_diagonal_matrix(Idx **row_ptr, Idx **col_ptr, value_type **val_ptr, Idx m, Idx nnz_per_row,
         Idx save_mat) {
+    Idx startCol = 0;
     std::ofstream createMat;
     std::string folderName = "SavedMatrix/";
     std::string outMat = "Random_Diag_Mat_" + std::to_string(m) + "_" + std::to_string(nnz_per_row) + ".mtx";
@@ -508,7 +510,7 @@ Idx create_random_diagonal_matrix(Idx **row_ptr, Idx **col_ptr, value_type **val
     (*row_ptr) = (Idx *) calloc(m + 1, sizeof(Idx));
     (*col_ptr) = (Idx *) malloc(m * nnz_per_row * sizeof(Idx));
     (*val_ptr) = (value_type *) malloc(m * nnz_per_row * sizeof(value_type));
-    srand(time(NULL) * (rank + 1));
+    srand(time(NULL));
 
     Idx *trackIndex, idx = 0;
     trackIndex = (Idx *) malloc(m * sizeof(Idx));
@@ -725,7 +727,7 @@ int main(int argc, char ** argv)
         save_mat = atoi(argv[argi++]);
     int err = 0;
     cout << "----------------mat row: "<< mat_row <<  " non-zero per block: " << nnz_per_block << " --------------" << endl;
-    err = call_bhsparse(filename);
+    err = call_bhsparse();
     cout << "------------------------------------------------------" << endl;
 
     return err;
