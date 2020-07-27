@@ -6,7 +6,7 @@
 long strideCounts = 0;
 int testType = 0;
 typedef int Idx;
-int nnz_per_block, mat_row,
+int nnz_per_block, mat_row;
 int save_mat=0;
 cusparseStatus_t cusparse_spmv(cusparseHandle_t handle, cusparseMatDescr_t descr,
                    int m, int n, int nnz, 
