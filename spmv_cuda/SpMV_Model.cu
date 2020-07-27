@@ -2,6 +2,7 @@
 #include "bhsparse_spmv_cuda.h"
 #include "mmio.h"
 #include <unordered_set>
+#include <sys/stat.h>
 
 long strideCounts = 0;
 int testType = 0;
@@ -498,10 +499,10 @@ Idx create_random_diagonal_matrix(Idx **row_ptr, Idx **col_ptr, value_type **val
     std::string fileName = folderName + outMat;
     std::ifstream infile(fileName);
     if (infile.good()) {
-        GraphReader reader = GraphReader();
-        reader.readMatrix(fileName, &m, &nnz_per_row, row_ptr, col_ptr, val_ptr);
-        infile.close();
-        return _SUCCESS;
+//        GraphReader reader = GraphReader();
+//        reader.readMatrix(fileName, &m, &nnz_per_row, row_ptr, col_ptr, val_ptr);
+//        infile.close();
+//        return _SUCCESS;
     }
 
     (*row_ptr) = (Idx *) calloc(m + 1, sizeof(Idx));
