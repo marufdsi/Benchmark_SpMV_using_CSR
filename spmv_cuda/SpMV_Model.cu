@@ -577,7 +577,7 @@ int call_bhsparse()
     cout << "PRECISION = " << precision << endl;
     cout << "RUN SpMV " << NUM_RUN << " times" << endl;
 
-    int m, n, nnzA, max_deg = 0;
+    int m, n, nnzA, max_deg = nnzA/m;
     int *csrRowPtrA;
     int *csrColIdxA;
     value_type *csrValA;
