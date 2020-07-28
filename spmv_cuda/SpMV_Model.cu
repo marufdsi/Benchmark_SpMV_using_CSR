@@ -577,13 +577,13 @@ int call_bhsparse()
     cout << "PRECISION = " << precision << endl;
     cout << "RUN SpMV " << NUM_RUN << " times" << endl;
 
-    int m, n, nnzA, max_deg = nnzA/m;
+    int m, n, nnzA, max_deg;
     int *csrRowPtrA;
     int *csrColIdxA;
     value_type *csrValA;
     m = n = mat_row;
     nnzA = nnz_per_block;
-
+    max_deg = nnzA/m;
     create_random_diagonal_matrix(&csrRowPtrA, &csrColIdxA, &csrValA, m, nnzA/m, save_mat);
     double gb = (double)((m + 1 + nnzA) * sizeof(int) + (2 * nnzA + m) * sizeof(value_type));
     double gflop = (double)(2 * nnzA);
