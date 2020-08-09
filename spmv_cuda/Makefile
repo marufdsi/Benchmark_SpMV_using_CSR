@@ -10,7 +10,7 @@ CUFLAGS="-D__LP64__ -ta:tesla"
 #MPIFLAGS = -I/apps/pkg/openmpi/4.0.3/rhel7_u5/pbs/gnu/include/ -L/apps/pkg/openmpi/4.0.3/rhel7_u5/pbs/gnu/lib/
 # MPIFLAGS = -I/apps/pkg/openmpi/3.1.2/rhel7_u5/pbs/gnu/include/ -L/apps/pkg/openmpi/3.1.2/rhel7_u5/pbs/gnu/lib/
 # MPICH FLAGS
-MPIFLAGS = -I/apps/pkg/mpich/3.3.1/rhel7_u5/slurm/gnu/include/ -L/apps/pkg/mpich/3.3.1/rhel7_u5/slurm/gnu/lib
+MPIFLAGS = -I/apps/pkg/mpich/3.3.1/rhel7_u5/pbs/gnu_mxm/include/ -L/apps/pkg/mpich/3.3.1/rhel7_u5/pbs/gnu_mxm/lib
 CFLAGS = -lmpi
 
 #GLOBAL_PARAMETERS
