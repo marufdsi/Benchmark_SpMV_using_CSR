@@ -226,7 +226,6 @@ void call_cusparse_ref(int m, int n, int nnz,
 void call_cusp_ref(int m, int n, int nnz, int *csrRowPtrA, int *csrColIdxA, value_type *csrValA, value_type *x
         , value_type *y, value_type *y_ref)
 {
-    cout << endl << "CUSP is using dedicated GPU memory.";
     int *d_csrRowPtrA;
     int *d_csrColIdxA;
     value_type *d_csrValA;
@@ -244,7 +243,7 @@ void call_cusp_ref(int m, int n, int nnz, int *csrRowPtrA, int *csrColIdxA, valu
     checkCudaErrors(cudaMalloc((void **)&d_y, m  * sizeof(value_type)));
     checkCudaErrors(cudaMemcpy(d_y, y, m * sizeof(value_type), cudaMemcpyHostToDevice));
 
-    cout << endl << "[" << mpi_rank << "] Checking CUSP SpMV Correctness ... ";
+//        cout << endl << "[" << mpi_rank << "] Checking CUSP SpMV Correctness ... ";
     checkCudaErrors(cudaMemcpy(d_x, x, n * sizeof(value_type), cudaMemcpyHostToDevice));
     cusp_spmv<32>(m, n, nnz, d_csrRowPtrA, d_csrColIdxA, d_csrValA, d_x, d_y);
     value_type *y_cusp_ref = (value_type *)malloc(m * sizeof(value_type));
@@ -256,10 +255,9 @@ void call_cusp_ref(int m, int n, int nnz, int *csrRowPtrA, int *csrColIdxA, valu
         if (abs(y_ref[i] - y_cusp_ref[i]) > 0.01 * abs(y_ref[i])/*y_ref[i] != y_cusp_ref[i]*/)
             error_count++;
     if (error_count)
-        cout << "NO PASS. Error count = " << error_count << " out of " << m << " entries.";
-    else
-        cout << "PASS!";
-    cout << endl;
+        cout << "[" << mpi_rank << "] NO PASS. Error count = " << error_count << " out of " << m << " entries." << endl;
+//    else
+//        cout << "PASS!" << endl;
 
     double gb = (double)((m + 1 + nnz) * sizeof(int) + (2 * nnz + m) * sizeof(value_type));
     double gflop = (double)(2 * nnz);
@@ -274,10 +272,10 @@ void call_cusp_ref(int m, int n, int nnz, int *csrRowPtrA, int *csrColIdxA, valu
     double b_time, r_time, m_time, avg_b_time = 0, avg_r_time = 0, avg_m_time = 0;
     if (nnz_per_row <=  2)
     {
-        cout<< "THREADS_PER_VECTOR = 2" << endl;
+//        cout<< "THREADS_PER_VECTOR = 2" << endl;
         MPI_Barrier(MPI_COMM_WORLD);
         for (int i = 0; i < NUM_RUN+SKIP; i++) {
-            cout << "[" << mpi_rank << "] 2-iter= " << i+1 << " mat= " << matName << endl;
+//            cout << "[" << mpi_rank << "] 2-iter= " << i+1 << " mat= " << matName << endl;
             broadcast_timer.start();
             MPI_Bcast(x, m, MPI_FLOAT, col_rank, commcol); //col_rank is the one with the correct information
             b_time = broadcast_timer.stop();
@@ -304,7 +302,7 @@ void call_cusp_ref(int m, int n, int nnz, int *csrRowPtrA, int *csrColIdxA, valu
     {
         MPI_Barrier(MPI_COMM_WORLD);
         for (int i = 0; i < NUM_RUN+SKIP; i++) {
-            cout << "[" << mpi_rank << "] 4-iter= " << i+1 << " mat= " << matName << endl;
+//            cout << "[" << mpi_rank << "] 4-iter= " << i+1 << " mat= " << matName << endl;
             broadcast_timer.start();
             MPI_Bcast(x, m, MPI_FLOAT, col_rank, commcol); //col_rank is the one with the correct information
             b_time = broadcast_timer.stop();
@@ -329,10 +327,10 @@ void call_cusp_ref(int m, int n, int nnz, int *csrRowPtrA, int *csrColIdxA, valu
     }
     else if (nnz_per_row <=  8)
     {
-        cout<< "THREADS_PER_VECTOR = 8" << endl;
+//        cout<< "THREADS_PER_VECTOR = 8" << endl;
         MPI_Barrier(MPI_COMM_WORLD);
         for (int i = 0; i < NUM_RUN+SKIP; i++) {
-            cout << "[" << mpi_rank << "] 8-iter= " << i+1 << " mat= " << matName << endl;
+//            cout << "[" << mpi_rank << "] 8-iter= " << i+1 << " mat= " << matName << endl;
             broadcast_timer.start();
             MPI_Bcast(x, m, MPI_FLOAT, col_rank, commcol); //col_rank is the one with the correct information
             b_time = broadcast_timer.stop();
@@ -357,17 +355,17 @@ void call_cusp_ref(int m, int n, int nnz, int *csrRowPtrA, int *csrColIdxA, valu
     }
     else if (nnz_per_row <= 16)
     {
-        cout<< "[" << mpi_rank << "] THREADS_PER_VECTOR = 16" << endl;
+//        cout<< "[" << mpi_rank << "] THREADS_PER_VECTOR = 16" << endl;
         MPI_Barrier(MPI_COMM_WORLD);
         for (int i = 0; i < NUM_RUN; i++) {
-            if(i==19){
+            /*if(i==19){
                 for (int j = 0; j < 10; ++j) {
                     cout<< "[" << mpi_rank << "] 16: " ;
                     cout << x[j] << " ";
                 }
                 cout<<endl;
             }
-            cout << "[" << mpi_rank << "] 16-iter= " << i+1 << " mat= " << matName << endl;
+            cout << "[" << mpi_rank << "] 16-iter= " << i+1 << " mat= " << matName << endl;*/
             broadcast_timer.start();
             MPI_Bcast(x, m, MPI_FLOAT, col_rank, commcol); //col_rank is the one with the correct information
             b_time = broadcast_timer.stop();
@@ -392,17 +390,17 @@ void call_cusp_ref(int m, int n, int nnz, int *csrRowPtrA, int *csrColIdxA, valu
     }
     else
     {
-        cout<< "THREADS_PER_VECTOR = 32" << endl;
+//        cout<< "THREADS_PER_VECTOR = 32" << endl;
         MPI_Barrier(MPI_COMM_WORLD);
         for (int i = 0; i < NUM_RUN+SKIP; i++) {
-            if(i==20){
+            /*if(i==20){
                 for (int j = 0; j < 10; ++j) {
                     cout<< "[" << mpi_rank << "] 32: ";
                     cout << x[j] << " ";
                 }
                 cout<<endl;
             }
-            cout << "[" << mpi_rank << "] 32-iter= " << i+1 << " mat= " << matName << endl;
+            cout << "[" << mpi_rank << "] 32-iter= " << i+1 << " mat= " << matName << endl;*/
             broadcast_timer.start();
             MPI_Bcast(x, m, MPI_FLOAT, col_rank, commcol); //col_rank is the one with the correct information
             b_time = broadcast_timer.stop();
@@ -427,7 +425,9 @@ void call_cusp_ref(int m, int n, int nnz, int *csrRowPtrA, int *csrColIdxA, valu
     }
 
     MPI_Barrier(MPI_COMM_WORLD);
-    checkCudaErrors(cudaDeviceSynchronize());    cout<< "Run complete" << endl;
+    checkCudaErrors(cudaDeviceSynchronize());
+    if(mpi_rank == MASTER)
+        cout<< "Run complete" << endl;
     double cuspTime = cusp_timer.stop() / (NUM_RUN+SKIP);
     int avg_nnz;
     double avg_nnz_per_row, avgTime;
@@ -516,7 +516,7 @@ void call_omp_ref(int m, int n, int nnz,
     checkCudaErrors(cudaMallocManaged(&svm_y, m  * sizeof(value_type)));
     memcpy(svm_y,    y,    m  * sizeof(value_type));
 #else
-    cout << endl << "OpenMP is using dedicated HOST memory.";
+//    cout << endl << "OpenMP is using dedicated HOST memory.";
     value_type *y_omp_ref = (value_type *)malloc(m * sizeof(value_type));
 #endif
 
@@ -524,8 +524,8 @@ void call_omp_ref(int m, int n, int nnz,
     double gflop = (double)(2 * nnz);
 
 // run OpenMP START
-    omp_set_num_threads(4);
-    cout << endl << "OpenMP is using 4 threads.";
+//    omp_set_num_threads(4);
+//    cout << endl << "OpenMP is using 4 threads.";
     checkCudaErrors(cudaDeviceSynchronize());
 
     bhsparse_timer omp_timer;
@@ -562,14 +562,15 @@ void call_omp_ref(int m, int n, int nnz,
             error_count++;
 #endif
     if (error_count)
-        cout << "NO PASS. Error count = " << error_count << " out of " << m << " entries.";
-    else
-        cout << "PASS!";
-    cout << endl;
+        cout << "NO PASS. Error count = " << error_count << " out of " << m << " entries." << endl;
+//    else
+//        cout << "PASS!" << endl;
 
+if(mpi_rank == MASTER) {
     cout << "OpenMP time = " << ompTime
-         << " ms. Bandwidth = " << gb/(1.0e+6 * ompTime)
-         << " GB/s. GFlops = " << gflop/(1.0e+6 * ompTime)  << " GFlops." << endl << endl;
+         << " ms. Bandwidth = " << gb / (1.0e+6 * ompTime)
+         << " GB/s. GFlops = " << gflop / (1.0e+6 * ompTime) << " GFlops." << endl << endl;
+}
 // run OpenMP STOP
 
 #if USE_SVM_ALWAYS
@@ -646,12 +647,13 @@ int call_bhsparse_small()
 
     bhsparse_spmv_cuda *bhsparse = new bhsparse_spmv_cuda();
     err = bhsparse->init_platform();
-    cout << "Initializing CUDA platform ... ";
-    if (!err)
-        cout << "Done.";
+//    cout << "Initializing CUDA platform ... ";
+    if (!err) {
+//        cout << "Done.";
+    }
     else
-        cout << "Failed. Error code = " << err;
-    cout << endl;
+        cout << "\"Initializing CUDA platform ... Failed. Error code = " << err << endl;
+//    cout << endl;
 
     err = bhsparse->prepare_mem(m, n, nnzA, csrRowPtrA, csrColIdxA, csrValA, x, y);
 
@@ -721,8 +723,8 @@ int call_bhsparse(const char *datasetpath)
         return 0;
     }
 
-    cout << "PRECISION = " << precision << endl;
-    cout << "RUN SpMV " << NUM_RUN << " times" << endl;
+//    cout << "PRECISION = " << precision << endl;
+//    cout << "RUN SpMV " << NUM_RUN << " times" << endl;
 
     int ret_code;
     MM_typecode matcode;
@@ -894,7 +896,8 @@ int call_bhsparse(const char *datasetpath)
     free(csrRowIdxA_tmp);
     free(csrRowPtrA_counter);
 
-    cout << " ( " << m << ", " << n << " ) nnz = " << nnzA << endl;
+    if(mpi_rank == MASTER)
+        cout << " ( " << m << ", " << n << " ) nnz = " << nnzA << endl;
 
     srand(time(NULL));
     for (int i = 0; i < nnzA; i++)
@@ -910,7 +913,8 @@ int call_bhsparse(const char *datasetpath)
     value_type *y_ref = (value_type *)malloc(m * sizeof(value_type));
 
     /***********Access Pattern Based on 128 Threads Per Block *********/
-    cout << "M: " << m << " N: " << n << " nnzA: " << nnzA << " Max degree=" << max_deg << endl;
+    if(mpi_rank == MASTER)
+        cout << "M: " << m << " N: " << n << " nnzA: " << nnzA << " Max degree=" << max_deg << endl;
     int wordSize = TRANSACTION_BYTE/ sizeof(value_type);
     for (int row_i = 0; row_i < m; row_i += wordSize) {
         for (int k = 0; k < max_deg; ++k) {
@@ -931,7 +935,8 @@ int call_bhsparse(const char *datasetpath)
             strideCounts += hashme.size();
         }
     }
-    cout << "Strides count: " << strideCounts << " Transaction Byte Size: " << TRANSACTION_BYTE << " Number of Transaction Word: " << wordSize << endl;
+    if(mpi_rank == MASTER)
+        cout << "Strides count: " << strideCounts << " Transaction Byte Size: " << TRANSACTION_BYTE << " Number of Transaction Word: " << wordSize << endl;
 
     /*****************************************************************/
 
@@ -952,15 +957,17 @@ int call_bhsparse(const char *datasetpath)
     }
 
     double ref_time = ref_timer.stop() / (double)ref_iter;
-    cout << "cpu sequential time = " << ref_time
-         << " ms. Bandwidth = " << gb/(1.0e+6 * ref_time)
-         << " GB/s. GFlops = " << gflop/(1.0e+6 * ref_time)  << " GFlops." << endl << endl;
+    if(mpi_rank == MASTER) {
+        cout << "cpu sequential time = " << ref_time
+             << " ms. Bandwidth = " << gb / (1.0e+6 * ref_time)
+             << " GB/s. GFlops = " << gflop / (1.0e+6 * ref_time) << " GFlops." << endl << endl;
+    }
 
     memset(y, 0, m * sizeof(value_type));
 
 
     bhsparse_spmv_cuda *bhsparse = new bhsparse_spmv_cuda();
-    cout<< " rank sent to set device = " << mpi_rank << endl;
+//    cout<< " rank sent to set device = " << mpi_rank << endl;
     err = bhsparse->init_platform(mpi_rank);
 
 
