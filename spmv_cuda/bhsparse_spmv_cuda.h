@@ -61,14 +61,14 @@ bhsparse_spmv_cuda::bhsparse_spmv_cuda()
 int bhsparse_spmv_cuda::init_platform(int device_id)
 {
     int err = 0;
-    cout<< "device id = " << device_id << endl;
+//    cout<< "device id = " << device_id << endl;
     // set device
     cudaSetDevice(device_id);
     cudaDeviceProp deviceProp;
     cudaGetDeviceProperties(&deviceProp, device_id);
 
-    cout << "Device [" <<  device_id << "] " << deviceProp.name << ", "
-         << " @ " << deviceProp.clockRate * 1e-3f << "MHz. " << endl;
+//    cout << "Device [" <<  device_id << "] " << deviceProp.name << ", "
+//         << " @ " << deviceProp.clockRate * 1e-3f << "MHz. " << endl;
 
     return err;
 }

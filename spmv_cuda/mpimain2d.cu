@@ -1063,7 +1063,8 @@ int main(int argc, char ** argv)
     char processor_name[MPI_MAX_PROCESSOR_NAME];
     int name_len;
     MPI_Get_processor_name(processor_name, &name_len);
-    std::cout<<"[" << mpi_rank << ": " <<  processor_name << "] GPU 2d SpMV, MPI rank " << mpi_rank << " of "<< nRanks
+    if(mpi_rank == MASTER)
+        std::cout<<"[" << mpi_rank << ": " <<  processor_name << "] GPU 2d SpMV, MPI rank " << mpi_rank << " of "<< nRanks
     << " starting...." << endl;
     sqrRank = sqrt(nRanks);
     row_rank = mpi_rank / sqrRank; //which col of proc am I
@@ -1115,10 +1116,12 @@ int main(int argc, char ** argv)
         err = call_bhsparse_small();
     else
     {
-        cout << "--------------" << filename << "--------------" << endl;
+        if(mpi_rank == MASTER)
+            cout << "--------------" << filename << "--------------" << endl;
         err = call_bhsparse(filename);
     }
-    cout << "------------------------------------------------------" << endl;
+    if(mpi_rank == MASTER)
+        cout << "------------------------------------------------------" << endl;
     MPI_Finalize();
     return err;
 }
