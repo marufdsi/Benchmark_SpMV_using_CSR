@@ -10,7 +10,7 @@
 long strideCounts = 0;
 int mpi_rank, nRanks, MASTER = 0, sqrRank, row_rank, col_rank, firstRow, firstCol, total_sparsity = 0,
 max_sparsity = 0, transactionByte = 128;
-int mat_row = 0, nonZeroElements = 0, nodes = 0, ppn = 0, save_mat = 0, _format = 0;
+int mat_row = 0, nonZeroElements = 0, nodes = 0, ppn = 0, _format = 0;
 MPI_Comm commrow;
 MPI_Comm commcol;
 
@@ -779,7 +779,7 @@ int call_CSR_bhsparse(){
     m = n = mat_row;
     nnzA = nonZeroElements;
     max_deg = nnzA/m;
-    create_random_diagonal_matrix(&csrRowPtrA, &csrColIdxA, &csrValA, m, nnzA/m, save_mat, col_rank * mat_row, mpi_rank, 1);
+    create_random_diagonal_matrix(&csrRowPtrA, &csrColIdxA, &csrValA, m, nnzA/m, col_rank * mat_row, mpi_rank, 1);
     double gb = (double)((m + 1 + nnzA) * sizeof(int) + (2 * nnzA + m) * sizeof(value_type));
     double gflop = (double)(2 * nnzA);
 
@@ -892,7 +892,6 @@ int call_COO_bhsparse(){
 
 int main(int argc, char ** argv)
 {
-    int mat_row = 0, nnzA = 0, nodes = 0, ppn = 0, save_mat = 0, _format = 0;
     int argi = 1;
     MPI_Init(&argc, &argv);
     MPI_Comm_size(MPI_COMM_WORLD, &nRanks);
@@ -907,8 +906,6 @@ int main(int argc, char ** argv)
         nodes = atoi(argv[argi++]);
     if (argc > argi)
         ppn = atoi(argv[argi++]);
-    if (argc > argi)
-        save_mat = atoi(argv[argi++]);
 
 
     sqrRank = sqrt(nRanks);
