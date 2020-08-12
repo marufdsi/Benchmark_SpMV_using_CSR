@@ -887,6 +887,7 @@ int call_COO_bhsparse(){
         cout << "Wrong precision. Program exit!" << endl;
         return 0;
     }
+    return 0;
 }
 
 int main(int argc, char ** argv)
