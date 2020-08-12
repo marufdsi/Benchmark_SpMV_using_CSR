@@ -176,7 +176,9 @@ void call_cusparse_ref(int m, int n, int nnz,
          << " GB/s. GFlops = " << gflop/(1.0e+6 * cusparseTime)  << " GFlops." << endl << endl;
 // run cuSPARSE STOP
 
-    char outputFile[100] = "Results/CSR_CUDA_2DSpMV.csv";
+    char outputFile[100] = "Results/CSR_MPI_CUDA_2D_SpMV_Model.csv";
+    if(_format == 1)
+        outputFile = "Results/COO_MPI_CUDA_2D_SpMV_Model.csv" ;
     FILE *resultCSV;
     FILE *checkFile;
     if ((checkFile = fopen(outputFile, "r")) != NULL) {
@@ -191,10 +193,10 @@ void call_cusparse_ref(int m, int n, int nnz,
             fprintf(stderr, "fopen: failed to open file %s\n", outputFile);
             exit(EXIT_FAILURE);
         }
-        fprintf(resultCSV, "Name,M,N,AvgTime,TotalRun,NonZeroPerRow,NonZeroElements,Bandwidth,Flops,ValueType,Type,Strides,TransactionByte,WordSize\n");
+        fprintf(resultCSV, "M,N,AvgTime,TotalRun,NonZeroPerRow,NonZeroElements,Bandwidth,Flops,ValueType,Type,Strides,TransactionByte,WordSize\n");
     }
 
-    fprintf(resultCSV, "%s,%d,%d,%10.6lf,%d,%lf,%d,%lf,%lf,%d,%s,%ld,%d,%d\n", matName, m, n, cusparseTime, NUM_RUN, (double) nnz / m,
+    fprintf(resultCSV, "%s,%d,%d,%10.6lf,%d,%lf,%d,%lf,%lf,%d,%s,%ld,%d,%d\n", m, n, cusparseTime, NUM_RUN, (double) nnz / m,
             nnz, gb / (1.0e+6 * cusparseTime), gflop / (1.0e+6 * cusparseTime), sizeof(value_type), "CUSPARSE", strideCounts,
             TRANSACTION_BYTE, TRANSACTION_BYTE/ sizeof(value_type));
     if (fclose(resultCSV) != 0) {
@@ -452,7 +454,9 @@ void call_cusp_ref(int m, int n, int nnz, int *csrRowPtrA, int *csrColIdxA, valu
              << " GB/s. GFlops = " << gflop / (1.0e+6 * cuspTime) << " GFlops." << endl << endl;
 // run CUSP STOP
 
-        char outputFile[100] = _format == 0 ? "Results/CSR_MPI_CUDA_2D_SpMV_Model.csv" : "Results/COO_MPI_CUDA_2D_SpMV_Model.csv" ;
+        char outputFile[100] = "Results/CSR_MPI_CUDA_2D_SpMV_Model.csv";
+        if(_format == 1)
+            outputFile = "Results/COO_MPI_CUDA_2D_SpMV_Model.csv" ;
         FILE *resultCSV;
         FILE *checkFile;
         if ((checkFile = fopen(outputFile, "r")) != NULL) {
@@ -703,8 +707,8 @@ int call_bhsparse_small()
     return err;
 }
 
-int create_random_diagonal_matrix(Idx **row_ptr, Idx **col_ptr, ValueType **val_ptr, Idx m,
-                                  Idx nnz_per_row, Idx startCol, Idx rank, Idx isCSR) {
+int create_random_diagonal_matrix(int **row_ptr, int **col_ptr, ValueType **val_ptr, int m,
+                                  int nnz_per_row, int startCol, int rank, int isCSR) {
     size_t alignment = 64;
 
     if (isCSR == 1) {
@@ -740,7 +744,7 @@ int create_random_diagonal_matrix(Idx **row_ptr, Idx **col_ptr, ValueType **val_
     }
 
     if (isCSR == 1) {
-        Idx old = 0;
+        int old = 0;
         for (int i = 0; i < m + 1; ++i) {
             int current = (*row_ptr)[i] + old;
             (*row_ptr)[i] = old;
