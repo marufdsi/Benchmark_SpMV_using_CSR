@@ -914,7 +914,6 @@ int main(int argc, char ** argv)
         err = call_CSR_bhsparse();
     else
         err = call_COO_bhsparse();
-    std::cout<<"[" << mpi_rank << "] done" << std::endl;
     MPI_Barrier(MPI_COMM_WORLD);
     MPI_Finalize();
     return err;
