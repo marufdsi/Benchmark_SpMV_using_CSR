@@ -703,7 +703,7 @@ int call_bhsparse_small()
     return err;
 }
 
-int create_random_diagonal_matrix(int **row_ptr, int **col_ptr, ValueType **val_ptr, int m,
+int create_random_diagonal_matrix(int **row_ptr, int **col_ptr, value_type **val_ptr, int m,
                                   int nnz_per_row, int startCol, int rank, int isCSR) {
     size_t alignment = 64;
 
@@ -734,7 +734,7 @@ int create_random_diagonal_matrix(int **row_ptr, int **col_ptr, ValueType **val_
             else
                 (*row_ptr)[idx] = i;
             (*col_ptr)[idx] = randColIdx;
-            (*val_ptr)[idx] = ((ValueType) (randColIdx % 10) + 1);
+            (*val_ptr)[idx] = ((value_type) (randColIdx % 10) + 1);
             idx++;
         }
     }
