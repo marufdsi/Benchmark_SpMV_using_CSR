@@ -8,9 +8,9 @@
 
 #define MAX_STRING_LENGTH 128
 long strideCounts = 0;
-char matName[MAX_STRING_LENGTH];
-int testType = 0, mpi_rank, nRanks, MASTER = 0, sqrRank, row_rank, col_rank, firstRow, firstCol, total_sparsity = 0,
+int mpi_rank, nRanks, MASTER = 0, sqrRank, row_rank, col_rank, firstRow, firstCol, total_sparsity = 0,
 max_sparsity = 0, transactionByte = 128;
+int mat_row = 0, nonZeroElements = 0, nodes = 0, ppn = 0, save_mat = 0, _format = 0;
 MPI_Comm commrow;
 MPI_Comm commcol;
 
@@ -452,7 +452,7 @@ void call_cusp_ref(int m, int n, int nnz, int *csrRowPtrA, int *csrColIdxA, valu
              << " GB/s. GFlops = " << gflop / (1.0e+6 * cuspTime) << " GFlops." << endl << endl;
 // run CUSP STOP
 
-        char outputFile[100] = "Results/CSR_CUDA_2DSpMV.csv";
+        char outputFile[100] = _format == 0 ? "Results/CSR_MPI_CUDA_2D_SpMV_Model.csv" : "Results/COO_MPI_CUDA_2D_SpMV_Model.csv" ;
         FILE *resultCSV;
         FILE *checkFile;
         if ((checkFile = fopen(outputFile, "r")) != NULL) {
@@ -468,10 +468,10 @@ void call_cusp_ref(int m, int n, int nnz, int *csrRowPtrA, int *csrColIdxA, valu
                 exit(EXIT_FAILURE);
             }
             fprintf(resultCSV,
-                    "Name,M,N,AvgTime,AvgBcastTime,AvgMultTime,AvgReduceTime,TotalRun,NonZeroPerRow,NonZeroElements,Bandwidth,Flops,ValueType,Type,Strides,TransactionByte,WordSize\n");
+                    "M,N,AvgTime,AvgBcastTime,AvgMultTime,AvgReduceTime,TotalRun,NonZeroPerRow,NonZeroElements,Bandwidth,Flops,ValueType,Type,Strides,TransactionByte,WordSize\n");
         }
 
-        fprintf(resultCSV, "%s,%d,%d,%10.6lf,%10.6lf,%10.6lf,%10.6lf,%d,%lf,%d,%lf,%lf,%d,%s,%ld,%d,%d\n", matName, m,
+        fprintf(resultCSV, "%s,%d,%d,%10.6lf,%10.6lf,%10.6lf,%10.6lf,%d,%lf,%d,%lf,%lf,%d,%s,%ld,%d,%d\n", m,
                 n, avgTime, b_time, m_time, r_time, (NUM_RUN + SKIP), avg_nnz_per_row, avg_nnz, gb/(1.0e+6 * avgTime),
                 gflop/(1.0e+6 * avgTime), sizeof(value_type), "CUSP", strideCounts, TRANSACTION_BYTE,
                 TRANSACTION_BYTE/sizeof(value_type));
@@ -701,6 +701,192 @@ int call_bhsparse_small()
     err = bhsparse->free_mem();
 
     return err;
+}
+
+int create_random_diagonal_matrix(Idx **row_ptr, Idx **col_ptr, ValueType **val_ptr, Idx m,
+                                  Idx nnz_per_row, Idx startCol, Idx rank, Idx isCSR) {
+    size_t alignment = 64;
+
+    if (isCSR == 1) {
+        posix_memalign((void **) row_ptr, alignment, (m + 1) * sizeof(int));
+        memset((*row_ptr), 0, (m+1)* sizeof(int));
+    }
+    else
+        posix_memalign((void **) row_ptr, alignment, m * nnz_per_row * sizeof(int));
+    posix_memalign((void **) col_ptr, alignment, m * nnz_per_row * sizeof(int));
+    posix_memalign((void **) val_ptr, alignment, m * nnz_per_row * sizeof(value_type));
+    srand(time(NULL) * (rank + 1));
+
+    int *trackIndex, idx = 0;
+    trackIndex = (int *) malloc(m * sizeof(int));
+    for (int l = 0; l < m; ++l) {
+        trackIndex[l] = -1;
+    }
+    for (int i = 0; i < m; ++i) {
+        for (int j = 0; j < nnz_per_row; ++j) {
+            int randColIdx;
+            do {
+                randColIdx = rand() % m;
+            } while (trackIndex[randColIdx] >= i);
+            trackIndex[randColIdx] = i;
+            if (isCSR == 1)
+                (*row_ptr)[i]++;
+            else
+                (*row_ptr)[idx] = i;
+            (*col_ptr)[idx] = randColIdx;
+            (*val_ptr)[idx] = ((ValueType) (randColIdx % 10) + 1);
+            idx++;
+        }
+    }
+
+    if (isCSR == 1) {
+        Idx old = 0;
+        for (int i = 0; i < m + 1; ++i) {
+            int current = (*row_ptr)[i] + old;
+            (*row_ptr)[i] = old;
+            old = current;
+        }
+    }
+
+    free(trackIndex);
+    return 0;
+}
+
+
+int call_CSR_bhsparse(){
+    int err = 0;
+
+    // report precision of floating-point
+    char  *precision;
+    if (sizeof(value_type) == 4)
+    {
+        precision = "32-bit Single Precision";
+    }
+    else if (sizeof(value_type) == 8)
+    {
+        precision = "64-bit Double Precision";
+    }
+    else
+    {
+        cout << "Wrong precision. Program exit!" << endl;
+        return 0;
+    }
+
+    int m, n, nnzA, max_deg;
+    int *csrRowPtrA;
+    int *csrColIdxA;
+    value_type *csrValA;
+    m = n = mat_row;
+    nnzA = nonZeroElements;
+    max_deg = nnzA/m;
+    create_random_diagonal_matrix(&csrRowPtrA, &csrColIdxA, &csrValA, m, nnzA/m, save_mat, col_rank * mat_row, mpi_rank, 1);
+    double gb = (double)((m + 1 + nnzA) * sizeof(int) + (2 * nnzA + m) * sizeof(value_type));
+    double gflop = (double)(2 * nnzA);
+
+    srand(time(NULL));
+    for (int i = 0; i < nnzA; i++)
+    {
+        csrValA[i] = 1.0/(value_type)m;
+    }
+
+    value_type *x = (value_type *)malloc(m * sizeof(value_type));
+    for (int i = 0; i < m; i++)
+        x[i] = 1.0;
+
+    value_type *y = (value_type *)malloc(m * sizeof(value_type));
+    value_type *y_ref = (value_type *)malloc(m * sizeof(value_type));
+
+    /***********Access Pattern Based on 128 Threads Per Block *********/
+    if(mpi_rank == MASTER)
+        cout << "M: " << m << " N: " << n << " nnzA: " << nnzA << " Max degree=" << max_deg << endl;
+    int wordSize = TRANSACTION_BYTE/ sizeof(value_type);
+    for (int row_i = 0; row_i < m; row_i += wordSize) {
+        for (int k = 0; k < max_deg; ++k) {
+            int failed = 0;
+            int row_check = (row_i + wordSize) > m ? m : (row_i + wordSize);
+            unordered_set<long> hashme;
+            for (int th = row_i; th < row_check; ++th) {
+                if (k < (csrRowPtrA[th + 1] - csrRowPtrA[th])) {
+                    hashme.insert((long)(&x[csrColIdxA[csrRowPtrA[th] + k]])/TRANSACTION_BYTE);
+                    failed = 1;
+                }
+
+            }
+
+            if (failed == 0) {
+                break;
+            }
+            strideCounts += hashme.size();
+        }
+    }
+    if(mpi_rank == MASTER)
+        cout << "Strides count: " << strideCounts << " Transaction Byte Size: " << TRANSACTION_BYTE << " Number of Transaction Word: " << wordSize << endl;
+
+    /*****************************************************************/
+
+    // compute cpu results
+    bhsparse_timer ref_timer;
+    ref_timer.start();
+
+    int ref_iter = 1;
+    for (int iter = 0; iter < ref_iter; iter++)
+    {
+        for (int i = 0; i < m; i++)
+        {
+            value_type sum = 0;
+            for (int j = csrRowPtrA[i]; j < csrRowPtrA[i+1]; j++)
+                sum += x[csrColIdxA[j]] * csrValA[j];
+            y_ref[i] = sum;
+        }
+    }
+
+    double ref_time = ref_timer.stop() / (double)ref_iter;
+    if(mpi_rank == MASTER) {
+        cout << "cpu sequential time = " << ref_time
+             << " ms. Bandwidth = " << gb / (1.0e+6 * ref_time)
+             << " GB/s. GFlops = " << gflop / (1.0e+6 * ref_time) << " GFlops." << endl << endl;
+    }
+
+    memset(y, 0, m * sizeof(value_type));
+
+
+    bhsparse_spmv_cuda *bhsparse = new bhsparse_spmv_cuda();
+    err = bhsparse->init_platform(mpi_rank);
+
+
+    call_cusp_ref(m, m, nnzA, csrRowPtrA, csrColIdxA, csrValA, x, y, y_ref);
+//    call_cusparse_ref(m, m, nnzA, csrRowPtrA, csrColIdxA, csrValA, x, y, y_ref);
+//    call_omp_ref(m, n, nnzA, csrRowPtrA, csrColIdxA, csrValA, x, y, y_ref);
+
+
+    free(csrRowPtrA);
+    free(csrColIdxA);
+    free(csrValA);
+    free(x);
+    free(y);
+    free(y_ref);
+
+    return err;
+}
+
+int call_COO_bhsparse(){
+    int err = 0;
+
+    // report precision of floating-point
+    char  *precision;
+    if (sizeof(value_type) == 4)
+    {
+        precision = "32-bit Single Precision";
+    }
+    else if (sizeof(value_type) == 8)
+    {
+        precision = "64-bit Double Precision";
+    }
+    else
+    {
+        cout << "Wrong precision. Program exit!" << endl;
+        return 0;
+    }
 }
 
 int call_bhsparse(const char *datasetpath)
@@ -1034,95 +1220,44 @@ int call_bhsparse(const char *datasetpath)
 
 int main(int argc, char ** argv)
 {
-/*
-#if defined(MPIX_CUDA_AWARE_SUPPORT) && MPIX_CUDA_AWARE_SUPPORT
-    printf("This MPI library has CUDA-aware support.\n", MPIX_CUDA_AWARE_SUPPORT);
-#elif defined(MPIX_CUDA_AWARE_SUPPORT) && !MPIX_CUDA_AWARE_SUPPORT
-    printf("This MPI library does not have CUDA-aware support.\n");
-#else
-    printf("This MPI library cannot determine if there is CUDA-aware support.\n");
-#endif *//* MPIX_CUDA_AWARE_SUPPORT *//*
-
-    printf("Run time check:\n");
-#if defined(MPIX_CUDA_AWARE_SUPPORT)
-    if (1 == MPIX_Query_cuda_support()) {
-        printf("This MPI library has CUDA-aware support.\n");
-    } else {
-        printf("This MPI library does not have CUDA-aware support.\n");
-    }
-#else *//* !defined(MPIX_CUDA_AWARE_SUPPORT) *//*
-    printf("This MPI library cannot determine if there is CUDA-aware support.\n");
-#endif *//* MPIX_CUDA_AWARE_SUPPORT *//*
-    return 0;*/
+    int mat_row = 0, nnzA = 0, nodes = 0, ppn = 0, save_mat = 0, _format = 0;
     int argi = 1;
-    char *input;
-    char filename[MAX_STRING_LENGTH];
     MPI_Init(&argc, &argv);
     MPI_Comm_size(MPI_COMM_WORLD, &nRanks);
     MPI_Comm_rank(MPI_COMM_WORLD, &mpi_rank);
-    char processor_name[MPI_MAX_PROCESSOR_NAME];
-    int name_len;
-    MPI_Get_processor_name(processor_name, &name_len);
-    if(mpi_rank == MASTER)
-        std::cout<<"[" << mpi_rank << ": " <<  processor_name << "] GPU 2d SpMV, MPI rank " << mpi_rank << " of "<< nRanks
-    << " starting...." << endl;
+
+    mat_row = atoi(argv[argi++]);
+    nonZeroElements = atoi(argv[argi++]);
+    nonZeroElements = (nonZeroElements/mat_row) * mat_row;
+    if (argc > argi)
+        _format = atoi(argv[argi++]);
+    if (argc > argi)
+        nodes = atoi(argv[argi++]);
+    if (argc > argi)
+        ppn = atoi(argv[argi++]);
+    if (argc > argi)
+        save_mat = atoi(argv[argi++]);
+
+
     sqrRank = sqrt(nRanks);
     row_rank = mpi_rank / sqrRank; //which col of proc am I
     col_rank = mpi_rank % sqrRank; //which row of proc am I
 
     //initialize communicators
     MPI_Comm_split(MPI_COMM_WORLD, row_rank, mpi_rank, &commrow);
-
     MPI_Comm_split(MPI_COMM_WORLD, col_rank, mpi_rank, &commcol);
-    if(argc > argi)
-    {
-        input = argv[argi];
-        argi++;
-    }
-    if (argc > argi){
-        testType = atoi(argv[argi]);
-        argi++;
-    }
+
     int err = 0;
-    char *file[MAX_STRING_LENGTH];
-    char *only_mat_name[MAX_STRING_LENGTH];
-    char n[MAX_STRING_LENGTH] = "";
-    char * ptr = strtok(input, "/");
-    int i=0,j;
-    while(ptr != NULL)
-    {
-        file[i++] = ptr;
-        ptr = strtok(NULL, "/");
-    }
-    for(j=0; j<i-1; ++j){
-        strcat(n, file[j]);
-        strcat(n, "/");
-    }
-    ptr = strtok(file[i-1], ".");
-    sprintf(filename, "%s%s_%d.mtx", n, ptr, mpi_rank);
-    char *good_format = strtok(ptr, "_");
-    i=0;
-    while(good_format != NULL)
-    {
-        only_mat_name[i++] = good_format;
-        good_format = strtok(NULL, "_");
-    }
-    for(j=0; j<i-2; ++j){
-        strcat(matName, only_mat_name[j]);
-        if(j < i-3)
-            strcat(matName, "_");
-    }
-    if (strcmp(filename, "0") == 0)
+    if (mpi_rank == MASTER)
+        std::cout<<"M: " << mat_row << " nnzA: " << nnzA << " format: " << _format == 0 ? "CSR" : "COO" << std::endl;
+
+    if (mat_row == 0 || nnzA == 0)
         err = call_bhsparse_small();
+    else if(_format == 0)
+        err = call_CSR_bhsparse();
     else
-    {
-        if(mpi_rank == MASTER)
-            cout << "--------------" << filename << "--------------" << endl;
-        err = call_bhsparse(filename);
-    }
+        err = call_COO_bhsparse();
     MPI_Barrier(MPI_COMM_WORLD);
-    if(mpi_rank == MASTER)
-        cout << "------------------------------------------------------" << endl;
     MPI_Finalize();
     return err;
 }
