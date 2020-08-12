@@ -846,7 +846,7 @@ int call_CSR_bhsparse(){
 //    call_cusparse_ref(m, m, nnzA, csrRowPtrA, csrColIdxA, csrValA, x, y, y_ref);
 //    call_omp_ref(m, n, nnzA, csrRowPtrA, csrColIdxA, csrValA, x, y, y_ref);
 
-
+    MPI_Barrier(MPI_COMM_WORLD);
     free(csrRowPtrA);
     free(csrColIdxA);
     free(csrValA);
@@ -907,13 +907,14 @@ int main(int argc, char ** argv)
     int err = 0;
     if (mpi_rank == MASTER)
         std::cout<<"M: " << mat_row << " nnzA: " << nonZeroElements << " format: " << (_format == 0 ? "CSR" : "COO") << std::endl;
-
+    MPI_Barrier(MPI_COMM_WORLD);
     if (mat_row == 0 || nonZeroElements == 0)
         err = call_bhsparse_small();
     else if(_format == 0)
         err = call_CSR_bhsparse();
     else
         err = call_COO_bhsparse();
+    std::cout<<"[" << mpi_rank << "] done" << std::endl;
     MPI_Barrier(MPI_COMM_WORLD);
     MPI_Finalize();
     return err;
