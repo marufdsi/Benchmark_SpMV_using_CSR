@@ -429,23 +429,20 @@ void call_cusp_ref(int m, int n, int nnz, int *csrRowPtrA, int *csrColIdxA, valu
     if(mpi_rank == MASTER)
         cout<< "Run complete" << endl;
     double cuspTime = cusp_timer.stop() / (NUM_RUN+SKIP);
-    int avg_nnz;
-    double avg_nnz_per_row, avgTime;
+    int avg_nnz = nnz;
+    double avg_nnz_per_row = nnz_per_row, avgTime;
     avg_b_time /= NUM_RUN;
     avg_m_time /= NUM_RUN;
     avg_r_time /= NUM_RUN;
-    MPI_Reduce(&nnz, &avg_nnz, 1, MPI_INT, MPI_SUM, MASTER, MPI_COMM_WORLD);
-    MPI_Reduce(&nnz_per_row, &avg_nnz_per_row, 1, MPI_DOUBLE, MPI_SUM, MASTER, MPI_COMM_WORLD);
     MPI_Reduce(&avg_b_time, &b_time, 1, MPI_DOUBLE, MPI_SUM, MASTER, MPI_COMM_WORLD);
     MPI_Reduce(&avg_m_time, &m_time, 1, MPI_DOUBLE, MPI_SUM, MASTER, MPI_COMM_WORLD);
     MPI_Reduce(&avg_r_time, &r_time, 1, MPI_DOUBLE, MPI_SUM, MASTER, MPI_COMM_WORLD);
     MPI_Reduce(&cuspTime, &avgTime, 1, MPI_DOUBLE, MPI_SUM, MASTER, MPI_COMM_WORLD);
-    avg_nnz /= nRanks;
-    avg_nnz_per_row /= nRanks;
     b_time /= nRanks;
     m_time /= nRanks;
     r_time /= nRanks;
     avgTime /= nRanks;
+    MPI_Barrier(MPI_COMM_WORLD);
     if(mpi_rank == MASTER) {
         cout << "CUSP time = " << cuspTime
              << " ms. Bandwidth = " << gb / (1.0e+6 * cuspTime)
