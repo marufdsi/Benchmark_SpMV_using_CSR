@@ -918,9 +918,9 @@ int main(int argc, char ** argv)
 
     int err = 0;
     if (mpi_rank == MASTER)
-        std::cout<<"M: " << mat_row << " nnzA: " << nnzA << " format: " << (_format == 0 ? "CSR" : "COO") << std::endl;
+        std::cout<<"M: " << mat_row << " nnzA: " << nonZeroElements << " format: " << (_format == 0 ? "CSR" : "COO") << std::endl;
 
-    if (mat_row == 0 || nnzA == 0)
+    if (mat_row == 0 || nonZeroElements == 0)
         err = call_bhsparse_small();
     else if(_format == 0)
         err = call_CSR_bhsparse();
