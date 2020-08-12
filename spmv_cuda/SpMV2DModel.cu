@@ -177,8 +177,6 @@ void call_cusparse_ref(int m, int n, int nnz,
 // run cuSPARSE STOP
 
     char outputFile[100] = "Results/CSR_MPI_CUDA_2D_SpMV_Model.csv";
-    if(_format == 1)
-        outputFile = "Results/COO_MPI_CUDA_2D_SpMV_Model.csv" ;
     FILE *resultCSV;
     FILE *checkFile;
     if ((checkFile = fopen(outputFile, "r")) != NULL) {
@@ -455,8 +453,6 @@ void call_cusp_ref(int m, int n, int nnz, int *csrRowPtrA, int *csrColIdxA, valu
 // run CUSP STOP
 
         char outputFile[100] = "Results/CSR_MPI_CUDA_2D_SpMV_Model.csv";
-        if(_format == 1)
-            outputFile = "Results/COO_MPI_CUDA_2D_SpMV_Model.csv" ;
         FILE *resultCSV;
         FILE *checkFile;
         if ((checkFile = fopen(outputFile, "r")) != NULL) {
