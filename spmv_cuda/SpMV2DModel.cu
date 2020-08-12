@@ -194,7 +194,7 @@ void call_cusparse_ref(int m, int n, int nnz,
         fprintf(resultCSV, "M,N,AvgTime,TotalRun,NonZeroPerRow,NonZeroElements,Bandwidth,Flops,ValueType,Type,Strides,TransactionByte,WordSize\n");
     }
 
-    fprintf(resultCSV, "%s,%d,%d,%10.6lf,%d,%lf,%d,%lf,%lf,%d,%s,%ld,%d,%d\n", m, n, cusparseTime, NUM_RUN, (double) nnz / m,
+    fprintf(resultCSV, "%d,%d,%10.6lf,%d,%lf,%d,%lf,%lf,%d,%s,%ld,%d,%d\n", m, n, cusparseTime, NUM_RUN, (double) nnz / m,
             nnz, gb / (1.0e+6 * cusparseTime), gflop / (1.0e+6 * cusparseTime), sizeof(value_type), "CUSPARSE", strideCounts,
             TRANSACTION_BYTE, TRANSACTION_BYTE/ sizeof(value_type));
     if (fclose(resultCSV) != 0) {
@@ -458,7 +458,7 @@ void call_cusp_ref(int m, int n, int nnz, int *csrRowPtrA, int *csrColIdxA, valu
                     "M,N,AvgTime,AvgBcastTime,AvgMultTime,AvgReduceTime,TotalRun,NonZeroPerRow,NonZeroElements,Bandwidth,Flops,ValueType,Type,Strides,TransactionByte,WordSize\n");
         }
 
-        fprintf(resultCSV, "%s,%d,%d,%10.6lf,%10.6lf,%10.6lf,%10.6lf,%d,%lf,%d,%lf,%lf,%d,%s,%ld,%d,%d\n", m,
+        fprintf(resultCSV, "%d,%d,%10.6lf,%10.6lf,%10.6lf,%10.6lf,%d,%lf,%d,%lf,%lf,%d,%s,%ld,%d,%d\n", m,
                 n, avgTime, b_time, m_time, r_time, (NUM_RUN + SKIP), avg_nnz_per_row, avg_nnz, gb/(1.0e+6 * avgTime),
                 gflop/(1.0e+6 * avgTime), sizeof(value_type), "CUSP", strideCounts, TRANSACTION_BYTE,
                 TRANSACTION_BYTE/sizeof(value_type));
